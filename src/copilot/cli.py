@@ -7,6 +7,8 @@
     copilot timeline --facts FILE [--set k=v] [--as-of DATE] [--json]
     copilot rules check [--strict]
     copilot eval run|resolve|snapshot|sample
+    copilot recheck [--baseline index|snapshot]   detect source changes
+    copilot serve [--port 8000]          local HTTP API for the web UI
     copilot stats
 """
 
@@ -428,6 +430,42 @@ def cmd_eval_sample(cfg: AppConfig, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_recheck(cfg: AppConfig, args: argparse.Namespace) -> int:
+    """Exit codes: 0 = no content changes, 3 = pages changed (useful for schedulers and CI)."""
+    from copilot.changes import recheck_index, recheck_snapshot, render, write_report
+    from copilot.crawler import Crawler, HttpxFetcher
+    from copilot.evaluation.dataset import load_snapshot
+    from copilot.timeline import load_rules
+
+    rules = load_rules(cfg.rules.dir)
+    sources = [cfg.source(args.source)] if args.source else cfg.sources
+    fetcher = HttpxFetcher(cfg.crawl)
+    try:
+        crawler = Crawler(cfg.crawl, fetcher)
+        if args.baseline == "snapshot":
+            report = recheck_snapshot(load_snapshot(cfg.evaluation.snapshot), sources, crawler, rules)
+            out_dir = Path(args.out) if args.out else cfg.evaluation.results_dir
+        else:
+            report = recheck_index(cfg, sources, crawler, rules, _embedder(cfg))
+            out_dir = Path(args.out) if args.out else cfg.data_dir / "changes"
+    finally:
+        fetcher.close()
+    path = write_report(report, out_dir)
+    print(render(report))
+    print(f"\nReport written to {path}")
+    return 3 if report.has_content_changes else 0
+
+
+def cmd_serve(cfg: AppConfig, args: argparse.Namespace) -> int:
+    import uvicorn
+
+    from copilot.api.app import create_app
+
+    print(f"F-1 Copilot API on http://{args.host}:{args.port}  (docs at /docs)")
+    uvicorn.run(create_app(cfg), host=args.host, port=args.port, log_level="warning")
+    return 0
+
+
 def cmd_stats(cfg: AppConfig, args: argparse.Namespace) -> int:
     with Store(cfg.data_dir) as store:
         print(json.dumps(store.stats(), indent=2))
@@ -505,6 +543,18 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--seed", type=int, default=7)
     e.add_argument("--out", default="eval/drafts/drafts.jsonl")
     e.set_defaults(func=cmd_eval_sample)
+
+    s = sub.add_parser("recheck", help="re-crawl sources and report what changed")
+    s.add_argument("--baseline", choices=["index", "snapshot"], default="index",
+                   help="index: update the live index (default). snapshot: read-only diff vs. eval snapshot")
+    s.add_argument("--source", help="only this source name")
+    s.add_argument("--out", help="directory for the JSON report")
+    s.set_defaults(func=cmd_recheck)
+
+    s = sub.add_parser("serve", help="run the local HTTP API for the web UI")
+    s.add_argument("--host", default="127.0.0.1")
+    s.add_argument("--port", type=int, default=8000)
+    s.set_defaults(func=cmd_serve)
 
     s = sub.add_parser("stats", help="show index statistics")
     s.set_defaults(func=cmd_stats)

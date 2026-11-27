@@ -3,7 +3,7 @@
 This is an information tool, not legal advice.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.4.0"
 
 DISCLAIMER = (
     "F-1 Compliance Copilot is an information tool, not legal advice. "

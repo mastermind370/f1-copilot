@@ -44,6 +44,17 @@ CREATE TABLE IF NOT EXISTS meta (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+-- Answers are cached per (normalized question, config). Each row records which source URLs
+-- it cited, so change detection can mark exactly the answers that depend on a changed page.
+CREATE TABLE IF NOT EXISTS answer_cache (
+    question_key  TEXT NOT NULL,
+    config_key    TEXT NOT NULL,
+    answer_json   TEXT NOT NULL,
+    cited_urls    TEXT NOT NULL,
+    created_at    TEXT NOT NULL,
+    stale         INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (question_key, config_key)
+);
 """
 
 CHUNK_COLS = "chunk_id, url, source, heading, text, retrieved_at, doc_hash, position"
@@ -125,6 +136,10 @@ class Store:
             )
         return len(rows)
 
+    def chunk_ids_for_url(self, url: str) -> set[str]:
+        rows = self.conn.execute("SELECT chunk_id FROM chunks WHERE url = ?", (url,)).fetchall()
+        return {str(r[0]) for r in rows}
+
     def all_chunks(self) -> list[Chunk]:
         cur = self.conn.execute(f"SELECT {CHUNK_COLS} FROM chunks ORDER BY url, position")
         return [Chunk(*row) for row in cur.fetchall()]
@@ -142,6 +157,49 @@ class Store:
         meta = json.loads(self.emb_ids_path.read_text())
         matrix = np.load(self.emb_path)
         return list(meta["ids"]), matrix, str(meta["model"])
+
+    # answer cache ----------------------------------------------------------
+    def get_cached_answer(self, question_key: str, config_key: str) -> dict[str, object] | None:
+        row = self.conn.execute(
+            "SELECT answer_json FROM answer_cache WHERE question_key = ? AND config_key = ? AND stale = 0",
+            (question_key, config_key),
+        ).fetchone()
+        return None if row is None else dict(json.loads(row[0]))
+
+    def put_cached_answer(
+        self, question_key: str, config_key: str, answer: dict[str, object],
+        cited_urls: list[str], created_at: str,
+    ) -> None:
+        with self.conn:
+            self.conn.execute(
+                """INSERT INTO answer_cache (question_key, config_key, answer_json, cited_urls, created_at, stale)
+                   VALUES (?, ?, ?, ?, ?, 0)
+                   ON CONFLICT(question_key, config_key) DO UPDATE SET
+                     answer_json=excluded.answer_json, cited_urls=excluded.cited_urls,
+                     created_at=excluded.created_at, stale=0""",
+                (question_key, config_key, json.dumps(answer, ensure_ascii=False),
+                 json.dumps(sorted(set(cited_urls))), created_at),
+            )
+
+    def mark_answers_stale(self, urls: set[str]) -> int:
+        """Flag every cached answer that cites any of these URLs. Returns how many were flagged."""
+        if not urls:
+            return 0
+        rows = self.conn.execute(
+            "SELECT question_key, config_key, cited_urls FROM answer_cache WHERE stale = 0"
+        ).fetchall()
+        hit = [(q, c) for q, c, cited in rows if urls & set(json.loads(cited))]
+        with self.conn:
+            self.conn.executemany(
+                "UPDATE answer_cache SET stale = 1 WHERE question_key = ? AND config_key = ?", hit
+            )
+        return len(hit)
+
+    def cache_stats(self) -> dict[str, int]:
+        total, stale = self.conn.execute(
+            "SELECT COUNT(*), COALESCE(SUM(stale), 0) FROM answer_cache"
+        ).fetchone()
+        return {"cached_answers": int(total), "stale_answers": int(stale)}
 
     # stats -----------------------------------------------------------------
     def stats(self) -> dict[str, int]:

@@ -1,0 +1,59 @@
+name: Source change monitor
+
+# Weekly: re-crawl the official sources and diff them against the committed snapshot.
+# If any page changed, open an issue listing the rules that need re-verification.
+on:
+  schedule:
+    - cron: "17 14 * * 1"   # Mondays 14:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  recheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - run: pip install -e .
+      - name: Recheck against snapshot
+        id: recheck
+        # Exit code 3 means content changed. Don't fail the job for that; report it instead.
+        run: |
+          set +e
+          copilot -v recheck --baseline snapshot --out recheck-out
+          code=$?
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          if [ "$code" -ne 0 ] && [ "$code" -ne 3 ]; then exit "$code"; fi
+      - name: Open an issue if sources changed
+        if: steps.recheck.outputs.code == '3'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python - <<'EOF' > body.md
+          import json
+          r = json.load(open("recheck-out/latest.json"))
+          print(f"Weekly recheck on {r['checked_at']} found changes in official sources.\n")
+          for c in r["changed"]:
+              print(f"- **changed** {c['url']}")
+          for c in r["new"]:
+              print(f"- new page: {c['url']}")
+          if r["rules_to_reverify"]:
+              print("\n### Rules to re-verify")
+              for f in r["rules_to_reverify"]:
+                  print(f"- `{f['rule_id']}`: {f['reason']} ({f['source_url']})")
+          print("\nAfter reviewing: update the rules, run `copilot ingest`, `copilot eval snapshot`,")
+          print("re-run the eval, and commit the new snapshot.")
+          EOF
+          gh issue create --title "Official F-1 sources changed ($(date +%F))" --body-file body.md
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: recheck-report
+          path: recheck-out/

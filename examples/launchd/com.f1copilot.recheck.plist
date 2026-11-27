@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Weekly local recheck on macOS. Updates your live index, re-embeds changed pages, and marks
+  stale cached answers. Replace REPLACE_WITH_PROJECT_PATH with the output of `pwd` in your
+  project folder, then:
+    cp examples/launchd/com.f1copilot.recheck.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.f1copilot.recheck.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.f1copilot.recheck</string>
+  <key>WorkingDirectory</key>
+  <string>REPLACE_WITH_PROJECT_PATH</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>REPLACE_WITH_PROJECT_PATH/.venv/bin/copilot</string>
+    <string>recheck</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HF_HUB_OFFLINE</key>
+    <string>1</string>
+  </dict>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Weekday</key>
+    <integer>1</integer>
+    <key>Hour</key>
+    <integer>9</integer>
+    <key>Minute</key>
+    <integer>17</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>REPLACE_WITH_PROJECT_PATH/data/changes/launchd.log</string>
+  <key>StandardErrorPath</key>
+  <string>REPLACE_WITH_PROJECT_PATH/data/changes/launchd.log</string>
+</dict>
+</plist>

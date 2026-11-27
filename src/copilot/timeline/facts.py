@@ -99,3 +99,40 @@ def parse_facts(raw: Mapping[str, Any]) -> StudentFacts:
     if unknown:
         raise FactError(f"unknown fact(s): {', '.join(unknown)}. Known: {', '.join(FACT_TYPES)}")
     return StudentFacts(**{k: _coerce(k, v) for k, v in raw.items()})
+
+
+# Labels and help text for UIs. The web form is generated from this, so a new fact only
+# has to be added in one place.
+FACT_HELP: dict[str, tuple[str, str]] = {
+    "degree_level": ("Degree level", "The level of the program on your current I-20."),
+    "program_start_date": ("Program start date", "From your I-20."),
+    "program_end_date": ("Program end date", "From your I-20 (not necessarily your graduation ceremony)."),
+    "is_initial_student": ("Starting a new program and entering the US for it?", ""),
+    "completed_one_academic_year": ("Completed one full academic year of full-time study?", ""),
+    "full_time_cpt_months": ("Months of full-time CPT used at this degree level", "Part-time CPT doesn't count."),
+    "on_opt": ("Currently on post-completion OPT?", ""),
+    "on_stem_opt": ("Currently on the STEM OPT extension?", ""),
+    "stem_degree": ("Is your degree on the STEM-designated list?", "Ask your DSO if unsure."),
+    "opt_ead_start_date": ("OPT EAD start date", "From your EAD card."),
+    "opt_ead_end_date": ("OPT EAD end date", "From your EAD card."),
+    "dso_recommendation_date": ("OPT recommendation date", "When your DSO entered the OPT recommendation in SEVIS (on your new I-20)."),
+    "stem_dso_recommendation_date": ("STEM OPT recommendation date", "From your STEM OPT I-20."),
+    "last_travel_signature_date": ("Date of your most recent travel signature", "Page 2 of your I-20."),
+    "address_change_date": ("Date you moved (if you moved recently)", ""),
+    "employment_change_date": ("Date your employment changed (if on OPT)", ""),
+    "tax_year": ("Tax year", "The calendar year you were in the US, e.g. 2026."),
+    "had_us_income": ("Did you have US income in that tax year?", "Wages, taxable scholarships, etc."),
+}
+
+assert set(FACT_HELP) == set(FACT_TYPES), "every fact needs UI help text"
+
+
+def facts_schema() -> list[dict[str, object]]:
+    out: list[dict[str, object]] = []
+    for name, t in FACT_TYPES.items():
+        label, help_text = FACT_HELP[name]
+        entry: dict[str, object] = {"name": name, "type": t.__name__, "label": label, "help": help_text}
+        if name == "degree_level":
+            entry["options"] = sorted(DEGREE_LEVELS)
+        out.append(entry)
+    return out
