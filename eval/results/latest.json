@@ -4,7 +4,7 @@
     "n_chunks": 532,
     "embedding_model": "intfloat/multilingual-e5-small",
     "answers": "retrieval only",
-    "run_at": "2026-11-27T05:18:31+00:00",
+    "run_at": "2026-11-27T05:19:53+00:00",
     "too_broad_gold": [
       "en-opt-001",
       "en-stem-001",
@@ -25,34 +25,32 @@
     "n_answerable": 42,
     "n_should_refuse": 8,
     "unresolved": [
-      "en-opt-003",
-      "en-status-002",
-      "es-status-002"
+      "en-opt-003"
     ],
     "retrieval": {
       "overall": {
-        "n": 39,
-        "recall@1": 0.7692307692307693,
-        "recall@3": 0.8717948717948718,
-        "recall@5": 0.8974358974358975,
-        "recall@10": 0.9230769230769231,
-        "mrr@10": 0.8305860805860806
+        "n": 41,
+        "recall@1": 0.7560975609756098,
+        "recall@3": 0.8780487804878049,
+        "recall@5": 0.9024390243902439,
+        "recall@10": 0.926829268292683,
+        "mrr@10": 0.8266550522648084
       },
       "by_language": {
         "en": {
-          "n": 28,
-          "recall@1": 0.8214285714285714,
-          "recall@3": 0.8928571428571429,
-          "recall@5": 0.9285714285714286,
-          "recall@10": 0.9642857142857143,
-          "mrr@10": 0.8711734693877551
+          "n": 29,
+          "recall@1": 0.8275862068965517,
+          "recall@3": 0.896551724137931,
+          "recall@5": 0.9310344827586207,
+          "recall@10": 0.9655172413793104,
+          "mrr@10": 0.875615763546798
         },
         "es": {
-          "n": 2,
-          "recall@1": 0.5,
-          "recall@3": 0.5,
-          "recall@5": 0.5,
-          "recall@10": 0.5,
+          "n": 3,
+          "recall@1": 0.3333333333333333,
+          "recall@3": 0.6666666666666666,
+          "recall@5": 0.6666666666666666,
+          "recall@10": 0.6666666666666666,
           "mrr@10": 0.5
         },
         "hi": {
@@ -83,10 +81,10 @@
     },
     "cross_lingual": {
       "es": {
-        "pairs": 2,
+        "pairs": 3,
         "en_recall@5": 1.0,
-        "es_recall@5": 0.5,
-        "gap": 0.5
+        "es_recall@5": 0.6666666666666666,
+        "gap": 0.33333333333333337
       },
       "hi": {
         "pairs": 3,
@@ -113,7 +111,7 @@
         "true_refusals": 8,
         "missed_refusals": 0,
         "false_refusals": 0,
-        "correct_answers": 39,
+        "correct_answers": 41,
         "refusal_recall": 1.0,
         "false_refusal_rate": 0.0,
         "balanced_accuracy": 1.0
@@ -124,7 +122,7 @@
           "true_refusals": 4,
           "missed_refusals": 0,
           "false_refusals": 0,
-          "correct_answers": 28,
+          "correct_answers": 29,
           "refusal_recall": 1.0,
           "false_refusal_rate": 0.0,
           "balanced_accuracy": 1.0
@@ -134,7 +132,7 @@
           "true_refusals": 1,
           "missed_refusals": 0,
           "false_refusals": 0,
-          "correct_answers": 2,
+          "correct_answers": 3,
           "refusal_recall": 1.0,
           "false_refusal_rate": 0.0,
           "balanced_accuracy": 1.0
@@ -176,7 +174,7 @@
           "true_refusals": 8,
           "missed_refusals": 0,
           "false_refusals": 0,
-          "correct_answers": 39,
+          "correct_answers": 41,
           "refusal_recall": 1.0,
           "false_refusal_rate": 0.0,
           "balanced_accuracy": 1.0
@@ -187,7 +185,7 @@
             "true_refusals": 0,
             "missed_refusals": 8,
             "false_refusals": 0,
-            "correct_answers": 39,
+            "correct_answers": 41,
             "refusal_recall": 0.0,
             "false_refusal_rate": 0.0,
             "balanced_accuracy": 0.5
@@ -197,7 +195,7 @@
             "true_refusals": 0,
             "missed_refusals": 8,
             "false_refusals": 0,
-            "correct_answers": 39,
+            "correct_answers": 41,
             "refusal_recall": 0.0,
             "false_refusal_rate": 0.0,
             "balanced_accuracy": 0.5
@@ -207,7 +205,7 @@
             "true_refusals": 0,
             "missed_refusals": 8,
             "false_refusals": 0,
-            "correct_answers": 39,
+            "correct_answers": 41,
             "refusal_recall": 0.0,
             "false_refusal_rate": 0.0,
             "balanced_accuracy": 0.5
@@ -217,7 +215,7 @@
             "true_refusals": 0,
             "missed_refusals": 8,
             "false_refusals": 0,
-            "correct_answers": 39,
+            "correct_answers": 41,
             "refusal_recall": 0.0,
             "false_refusal_rate": 0.0,
             "balanced_accuracy": 0.5
@@ -227,7 +225,7 @@
             "true_refusals": 0,
             "missed_refusals": 8,
             "false_refusals": 0,
-            "correct_answers": 39,
+            "correct_answers": 41,
             "refusal_recall": 0.0,
             "false_refusal_rate": 0.0,
             "balanced_accuracy": 0.5
@@ -237,7 +235,7 @@
             "true_refusals": 2,
             "missed_refusals": 6,
             "false_refusals": 0,
-            "correct_answers": 39,
+            "correct_answers": 41,
             "refusal_recall": 0.25,
             "false_refusal_rate": 0.0,
             "balanced_accuracy": 0.625
@@ -247,7 +245,7 @@
             "true_refusals": 7,
             "missed_refusals": 1,
             "false_refusals": 0,
-            "correct_answers": 39,
+            "correct_answers": 41,
             "refusal_recall": 0.875,
             "false_refusal_rate": 0.0,
             "balanced_accuracy": 0.9375
@@ -256,27 +254,27 @@
             "threshold": 0.85,
             "true_refusals": 8,
             "missed_refusals": 0,
-            "false_refusals": 7,
+            "false_refusals": 9,
             "correct_answers": 32,
             "refusal_recall": 1.0,
-            "false_refusal_rate": 0.1794871794871795,
-            "balanced_accuracy": 0.9102564102564102
+            "false_refusal_rate": 0.21951219512195122,
+            "balanced_accuracy": 0.8902439024390244
           },
           {
             "threshold": 0.9,
             "true_refusals": 8,
             "missed_refusals": 0,
-            "false_refusals": 33,
+            "false_refusals": 35,
             "correct_answers": 6,
             "refusal_recall": 1.0,
-            "false_refusal_rate": 0.8461538461538461,
-            "balanced_accuracy": 0.5769230769230769
+            "false_refusal_rate": 0.8536585365853658,
+            "balanced_accuracy": 0.5731707317073171
           },
           {
             "threshold": 0.95,
             "true_refusals": 8,
             "missed_refusals": 0,
-            "false_refusals": 39,
+            "false_refusals": 41,
             "correct_answers": 0,
             "refusal_recall": 1.0,
             "false_refusal_rate": 1.0,
@@ -1001,7 +999,12 @@
       "should_refuse": false,
       "translation_of": null,
       "question": "What is the grace period after completing my studies?",
-      "gold_ids": [],
+      "gold_ids": [
+        "1385c7d053e7",
+        "785b4a454ebb",
+        "d5fe1e1058be",
+        "dee12cdd8c78"
+      ],
       "ranked_ids": [
         "d5fe1e1058be",
         "1385c7d053e7",
@@ -1015,8 +1018,8 @@
         "4160b1c3406e"
       ],
       "confidence": 0.8328327536582947,
-      "unresolved": true,
-      "first_gold_rank": null,
+      "unresolved": false,
+      "first_gold_rank": 1,
       "answer": null,
       "refused": null,
       "refusal_reason": null,
@@ -2150,7 +2153,12 @@
       "should_refuse": false,
       "translation_of": "en-status-002",
       "question": "¿Cuál es el período de gracia después de terminar mis estudios?",
-      "gold_ids": [],
+      "gold_ids": [
+        "1385c7d053e7",
+        "785b4a454ebb",
+        "d5fe1e1058be",
+        "dee12cdd8c78"
+      ],
       "ranked_ids": [
         "1c0e6e2ed829",
         "d5fe1e1058be",
@@ -2164,8 +2172,8 @@
         "532dfd7056d9"
       ],
       "confidence": 0.8136546611785889,
-      "unresolved": true,
-      "first_gold_rank": null,
+      "unresolved": false,
+      "first_gold_rank": 2,
       "answer": null,
       "refused": null,
       "refusal_reason": null,

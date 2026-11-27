@@ -3,10 +3,10 @@ max:
   refusal.configured.false_refusal_rate: 0.05
 min:
   refusal.configured.balanced_accuracy: 0.95
-  retrieval.by_language.en.recall@5: 0.87
-  retrieval.by_language.es.recall@5: 0.45
+  retrieval.by_language.en.recall@5: 0.88
+  retrieval.by_language.es.recall@5: 0.61
   retrieval.by_language.hi.recall@5: 0.95
   retrieval.by_language.ko.recall@5: 0.95
   retrieval.by_language.zh.recall@5: 0.61
-  retrieval.overall.mrr@10: 0.78
-  retrieval.overall.recall@5: 0.84
+  retrieval.overall.mrr@10: 0.77
+  retrieval.overall.recall@5: 0.85
