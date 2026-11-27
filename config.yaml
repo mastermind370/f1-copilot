@@ -55,7 +55,7 @@ retrieval:
   min_confidence: 0.80      # top dense cosine score below this -> refuse. Calibrated in Stage 3.
 
 llm:
-  provider: ollama          # ollama | openai | none (none = extractive answers, no LLM)
+  provider: none          # ollama | openai | none (none = extractive answers, no LLM)
   model: qwen2.5:7b
   base_url: http://localhost:11434
   api_key_env: OPENAI_API_KEY   # only used by the openai provider
