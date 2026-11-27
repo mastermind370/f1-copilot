@@ -1,6 +1,8 @@
+"use client";
+
 import type { ReactNode } from "react";
-import type { AskResponse } from "@/lib/api";
-import { formatDate } from "@/lib/api";
+import { usePrefs } from "@/components/Providers";
+import { type AskResponse, formatDate } from "@/lib/api";
 
 const CITATION = /\[([0-9a-f]{12}(?:\s*,\s*[0-9a-f]{12})*)\]/g;
 
@@ -15,11 +17,10 @@ function renderWithCitations(text: string, order: Map<string, number>): ReactNod
     const ids = m[1].split(",").map((s) => s.trim());
     nodes.push(
       <sup key={`c${key++}`} className="cite">
-        {ids.map((id, i) => {
+        {ids.map((id) => {
           const n = order.get(id);
           return n ? (
             <a key={id} href={`#src-${n}`} aria-label={`Source ${n}`}>
-              {i > 0 ? "," : ""}
               {n}
             </a>
           ) : null;
@@ -33,15 +34,23 @@ function renderWithCitations(text: string, order: Map<string, number>): ReactNod
 }
 
 export default function AnswerView({ answer }: { answer: AskResponse }) {
+  const { t, lang, locale, school, openPicker } = usePrefs();
+
   if (answer.refused) {
     return (
-      <section className="card refused">
-        <h2>No reliable answer found</h2>
-        <p>{answer.text}</p>
-        <p className="muted small">
-          Confidence {answer.confidence.toFixed(3)}. The tool refuses instead of guessing when the
-          official sources it indexed don&apos;t cover a question.
-        </p>
+      <section className="card answer-card refused">
+        <h2>{t("ask.noAnswerTitle")}</h2>
+        <p>{t("ask.noAnswerBody")}</p>
+        {school ? (
+          <a className="btn" href={school.url} target="_blank" rel="noreferrer">
+            {t("ask.contactOffice", { office: school.office })}
+          </a>
+        ) : (
+          <button type="button" className="btn" onClick={openPicker}>
+            {t("school.choose")}
+          </button>
+        )}
+        <p className="muted small">{t("ask.confidence", { value: answer.confidence.toFixed(3) })}</p>
       </section>
     );
   }
@@ -50,13 +59,14 @@ export default function AnswerView({ answer }: { answer: AskResponse }) {
   const lines = answer.text.split("\n").filter((l) => l.trim());
 
   return (
-    <section className="card">
+    <section className="card answer-card">
       <div className="answer">
         {lines.map((line, i) => (
           <p key={i}>{renderWithCitations(line.replace(/^\s*[-•]\s*/, ""), order)}</p>
         ))}
       </div>
-      <h3>Sources</h3>
+      {lang !== "en" && <p className="muted small">{t("ask.englishNote")}</p>}
+      <h3>{t("ask.sources")}</h3>
       <ol className="sources">
         {answer.citations.map((c, i) => (
           <li key={c.chunk_id} id={`src-${i + 1}`}>
@@ -64,18 +74,18 @@ export default function AnswerView({ answer }: { answer: AskResponse }) {
               {c.heading || c.url}
             </a>
             <div className="muted small">
-              {new URL(c.url).hostname} · retrieved {formatDate(c.retrieved_at.slice(0, 10))}
+              {new URL(c.url).hostname} · {t("ask.retrieved", { date: formatDate(c.retrieved_at.slice(0, 10), locale) })}
             </div>
             <details>
-              <summary>Show passage</summary>
-              <blockquote>{c.text}</blockquote>
+              <summary>{t("ask.showPassage")}</summary>
+              <blockquote lang="en">{c.text}</blockquote>
             </details>
           </li>
         ))}
       </ol>
       <p className="muted small">
-        Confidence {answer.confidence.toFixed(3)}
-        {answer.cached ? " · cached answer" : ""}
+        {t("ask.confidence", { value: answer.confidence.toFixed(3) })}
+        {answer.cached ? ` · ${t("ask.cached")}` : ""}
       </p>
     </section>
   );

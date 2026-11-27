@@ -84,18 +84,25 @@ class CopilotService:
             self._index_mtime = mtime
         return self._pipeline
 
-    def ask(self, question: str) -> dict[str, Any]:
+    def school_exclusions(self, school: str | None) -> set[str]:
+        """Pages that belong to a different school than the student's are never cited."""
+        return {s.name for s in self.cfg.sources if s.school and s.school != school}
+
+    def ask(self, question: str, school: str | None = None) -> dict[str, Any]:
         q = (question or "").strip()
         if not q:
             raise BadRequest("question is empty")
         if len(q) > MAX_QUESTION_CHARS:
             raise BadRequest(f"question is longer than {MAX_QUESTION_CHARS} characters")
-        key = question_key(q)
+        if school is not None and (len(school) > 40 or not school.replace("-", "").isalnum()):
+            raise BadRequest("invalid school id")
+        key = f"{question_key(q)}|{school or ''}"
+        exclude = self.school_exclusions(school)
         with self._lock, Store(self.cfg.data_dir) as store:
             cached = store.get_cached_answer(key, self.config_key)
             if cached is not None:
                 return {**cached, "cached": True}
-            answer = self._get_pipeline(store).ask(q)
+            answer = self._get_pipeline(store).ask(q, exclude)
             payload: dict[str, Any] = {
                 "question": answer.question,
                 "text": answer.text,

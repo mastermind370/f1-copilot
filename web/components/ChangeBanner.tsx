@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, type ChangeReport } from "@/lib/api";
+import { usePrefs } from "@/components/Providers";
+import { api, type ChangeReport, formatDate } from "@/lib/api";
 
 /** Warns when official pages behind the rules have changed since they were verified. */
 export default function ChangeBanner() {
+  const { t, locale } = usePrefs();
   const [report, setReport] = useState<ChangeReport | null>(null);
 
   useEffect(() => {
@@ -13,7 +15,7 @@ export default function ChangeBanner() {
       .changes()
       .then((r) => alive && setReport(r.report))
       .catch(() => {
-        /* API offline: the pages show their own error */
+        /* API offline: pages show their own error */
       });
     return () => {
       alive = false;
@@ -24,10 +26,11 @@ export default function ChangeBanner() {
 
   return (
     <div className="banner warn" role="alert">
-      <strong>Some official pages changed.</strong> The sources behind these rules changed or
-      couldn&apos;t be reached on {report.checked_at.slice(0, 10)}, so the dates they produce
-      may be out of date until they&apos;re re-verified:{" "}
-      {report.rules_to_reverify.map((f) => f.rule_id).join(", ")}. Check with your DSO.
+      <strong>{t("banner.title")}</strong>{" "}
+      {t("banner.body", {
+        date: formatDate(report.checked_at.slice(0, 10), locale),
+        rules: report.rules_to_reverify.map((f) => f.rule_id).join(", "),
+      })}
     </div>
   );
 }

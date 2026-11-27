@@ -1,44 +1,49 @@
-import type { Metadata } from "next";
-import Link from "next/link";
+import type { Metadata, Viewport } from "next";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 import ChangeBanner from "@/components/ChangeBanner";
+import Footer from "@/components/Footer";
+import Header from "@/components/Header";
+import Providers from "@/components/Providers";
+import SchoolPicker from "@/components/SchoolPicker";
+import SkipLink from "@/components/SkipLink";
 import "./globals.css";
 
+const PLAUSIBLE = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
+
+const sans = Plus_Jakarta_Sans({ subsets: ["latin"], display: "swap", variable: "--font-sans" });
+
 export const metadata: Metadata = {
-  title: "F-1 Compliance Copilot",
-  description: "Cited answers and deadline timelines for F-1 students. Information, not legal advice.",
+  title: "F-1 Copilot",
+  description:
+    "Cited answers and deadline timelines for F-1 students at Big Ten schools and NYU. Information, not legal advice.",
+};
+
+export const viewport: Viewport = {
+  colorScheme: "light",
+  themeColor: "#F6F4EF",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={sans.variable}>
+      <head>
+        {PLAUSIBLE && (
+          // Cookieless, anonymous page counts. Only loads when NEXT_PUBLIC_PLAUSIBLE_DOMAIN is set.
+          <script defer data-domain={PLAUSIBLE} src="https://plausible.io/js/script.js" />
+        )}
+      </head>
       <body>
-        <header className="site-header">
-          <div className="wrap header-row">
-            <Link href="/" className="brand">
-              F-1 Compliance Copilot
-            </Link>
-            <nav>
-              <Link href="/">Ask</Link>
-              <Link href="/timeline">My timeline</Link>
-              <Link href="/sources">Rules &amp; sources</Link>
-            </nav>
-          </div>
-        </header>
-        <div className="disclaimer" role="note">
-          <div className="wrap">
-            An information tool, not legal advice. Always confirm with your school&apos;s
-            Designated School Official (DSO) before acting.
-          </div>
-        </div>
-        <main className="wrap">
-          <ChangeBanner />
-          {children}
-        </main>
-        <footer className="wrap footer">
-          Answers come only from official sources and cite every sentence. Dates come from
-          fixed, versioned rules, not AI.
-        </footer>
+        <Providers>
+          <SkipLink />
+          <Header />
+          <main className="wrap" id="main" tabIndex={-1}>
+            <ChangeBanner />
+            {children}
+          </main>
+          <Footer />
+          <SchoolPicker />
+        </Providers>
       </body>
     </html>
   );

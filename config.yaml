@@ -30,10 +30,123 @@ sources:
 
   # Example university office. Replace with your school's international office pages.
   - name: rutgers_global
+    school: rutgers           # only cited for Rutgers students; other sources apply to everyone
     seeds:
       - https://global.rutgers.edu/
     allowed_prefixes:
       - https://global.rutgers.edu/
+
+  # Other supported schools' international offices. Each is tagged with its school, so its pages
+  # are only ever cited to that school's students. Add more seed pages (OPT, travel, CPT) per school
+  # to improve coverage; the crawler stays inside allowed_prefixes and obeys robots.txt.
+  - name: illinois_intl
+    school: illinois
+    seeds:
+      - https://isss.illinois.edu/
+    allowed_prefixes:
+      - https://isss.illinois.edu/
+  - name: indiana_intl
+    school: indiana
+    seeds:
+      - https://ois.iu.edu/
+    allowed_prefixes:
+      - https://ois.iu.edu/
+  - name: iowa_intl
+    school: iowa
+    seeds:
+      - https://international.uiowa.edu/isss
+    allowed_prefixes:
+      - https://international.uiowa.edu/isss
+  - name: maryland_intl
+    school: maryland
+    seeds:
+      - https://isss.umd.edu/
+    allowed_prefixes:
+      - https://isss.umd.edu/
+  - name: michigan_intl
+    school: michigan
+    seeds:
+      - https://internationalcenter.umich.edu/
+    allowed_prefixes:
+      - https://internationalcenter.umich.edu/
+  - name: michigan_state_intl
+    school: michigan-state
+    seeds:
+      - https://oiss.isp.msu.edu/
+    allowed_prefixes:
+      - https://oiss.isp.msu.edu/
+  - name: minnesota_intl
+    school: minnesota
+    seeds:
+      - https://isss.umn.edu/
+    allowed_prefixes:
+      - https://isss.umn.edu/
+  - name: nebraska_intl
+    school: nebraska
+    seeds:
+      - https://global.unl.edu/isso/
+    allowed_prefixes:
+      - https://global.unl.edu/isso/
+  - name: northwestern_intl
+    school: northwestern
+    seeds:
+      - https://www.northwestern.edu/international/
+    allowed_prefixes:
+      - https://www.northwestern.edu/international/
+  - name: ohio_state_intl
+    school: ohio-state
+    seeds:
+      - https://oia.osu.edu/
+    allowed_prefixes:
+      - https://oia.osu.edu/
+  - name: oregon_intl
+    school: oregon
+    seeds:
+      - https://isss.uoregon.edu/
+    allowed_prefixes:
+      - https://isss.uoregon.edu/
+  - name: penn_state_intl
+    school: penn-state
+    seeds:
+      - https://global.psu.edu/category/international-students
+    allowed_prefixes:
+      - https://global.psu.edu/
+  - name: purdue_intl
+    school: purdue
+    seeds:
+      - https://www.purdue.edu/gpp/iss/
+    allowed_prefixes:
+      - https://www.purdue.edu/gpp/iss/
+  - name: ucla_intl
+    school: ucla
+    seeds:
+      - https://internationalcenter.ucla.edu/f-1-students
+    allowed_prefixes:
+      - https://internationalcenter.ucla.edu/
+  - name: usc_intl
+    school: usc
+    seeds:
+      - https://ois.usc.edu/
+    allowed_prefixes:
+      - https://ois.usc.edu/
+  - name: washington_intl
+    school: washington
+    seeds:
+      - https://iss.washington.edu/
+    allowed_prefixes:
+      - https://iss.washington.edu/
+  - name: wisconsin_intl
+    school: wisconsin
+    seeds:
+      - https://iss.wisc.edu/
+    allowed_prefixes:
+      - https://iss.wisc.edu/
+  - name: nyu_intl
+    school: nyu
+    seeds:
+      - https://www.nyu.edu/students/student-information-and-resources/student-visa-and-immigration.html
+    allowed_prefixes:
+      - https://www.nyu.edu/students/student-information-and-resources/student-visa-and-immigration
 
 crawl:
   user_agent: "F1-Copilot/0.1 (student research project; respects robots.txt)"
@@ -52,7 +165,7 @@ retrieval:
   top_k: 5                  # passages given to the LLM
   candidate_k: 30           # depth of each ranked list before fusion
   rrf_k: 60                 # standard Reciprocal Rank Fusion constant
-  min_confidence: 0.81      # top dense cosine score below this -> refuse. Calibrated in Stage 3.
+  min_confidence: 0.81      # calibrated on the eval set in Stage 3 (balanced accuracy 1.0)
 
 llm:
   provider: none          # ollama | openai | none (none = extractive answers, no LLM)
@@ -71,5 +184,5 @@ evaluation:
   thresholds: eval/thresholds.yaml
   results_dir: eval/results
   snapshot: eval/snapshot/chunks.jsonl     # frozen corpus committed for reproducible CI
-  snapshot_exclude_sources: [rutgers_global]   # only public-domain US government text is committed
+  snapshot_exclude_sources: []   # school-tagged sources are always excluded; only public-domain US government text is committed
   faithfulness_model: cross-encoder/nli-deberta-v3-xsmall   # small local NLI judge (~280 MB)

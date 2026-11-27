@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "about": "Verified group chats per school. Add entries only after checking the group with its organizers. Every entry is validated by `npm test` (lib/communities.test.ts): https links on known platforms only, a named owner, and a verified date. WeChat groups use a QR image in public/communities/qr/ because WeChat has no web invite links; their codes expire after 7 days.",
+  "schools": {}
+}

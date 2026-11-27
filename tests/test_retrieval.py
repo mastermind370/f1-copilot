@@ -80,3 +80,19 @@ class TestHybrid:
         r = HybridRetriever([], np.zeros((0, 256), dtype=np.float32), FakeEmbedder(), RetrievalConfig())
         res = r.search("opt")
         assert res.hits == [] and res.confidence == 0.0
+
+
+class TestSourceExclusion:
+    def test_excluded_sources_never_returned(self, corpus: list[Chunk]) -> None:
+        from dataclasses import replace
+
+        tagged = [replace(c, source="rutgers_global") if c.chunk_id == "aaaaaaaaaaa3" else c for c in corpus]
+        r = _retriever(tagged)
+        assert r.search("I-20 travel signature", top_k=3).hits[0].chunk.chunk_id == "aaaaaaaaaaa3"
+        res = r.search("I-20 travel signature", top_k=5, exclude_sources={"rutgers_global"})
+        assert all(h.chunk.source != "rutgers_global" for h in res.hits)
+        assert res.confidence < r.search("I-20 travel signature").confidence
+
+    def test_everything_excluded(self, corpus: list[Chunk]) -> None:
+        res = _retriever(corpus).search("opt", exclude_sources={"test"})
+        assert res.hits == [] and res.confidence == 0.0

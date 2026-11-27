@@ -1,0 +1,27 @@
+# Fly.io: `fly launch --no-deploy`, then `fly secrets set COPILOT_ALLOWED_ORIGINS=https://your-app.vercel.app`,
+# then `fly deploy`.
+app = "f1-copilot-api"
+primary_region = "ewr"
+
+[build]
+
+[env]
+  PORT = "7860"
+
+[http_service]
+  internal_port = 7860
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    path = "/api/health"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "60s"
+
+[[vm]]
+  memory = "2gb"
+  cpu_kind = "shared"
+  cpus = 1

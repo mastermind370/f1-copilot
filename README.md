@@ -1,6 +1,16 @@
-# F-1 Compliance Copilot
+# F-1 Copilot
 
-**Cited answers and personal deadline timelines for international students on F-1 visas.**
+**Cited answers and personal deadline timelines for international students on F-1 visas, at all 18 Big Ten universities and NYU, in seven languages.**
+
+![60-second tour: welcome screen, school hub, cited answer, deadline timeline, documents, OPT days, community, school themes](docs/media/demo.gif)
+
+[Watch the full 60-second demo (MP4)](docs/media/demo.mp4) · Live app: _add your Vercel URL here_
+
+| Deadline timeline with calendar export | Document expiry tracker | OPT unemployment counter |
+|---|---|---|
+| ![Timeline](docs/media/shot-timeline.png) | ![Documents](docs/media/shot-documents.png) | ![OPT days](docs/media/shot-optdays.png) |
+| **Community tab** (example data) | **Michigan theme, in Chinese** | **Phone, in Vietnamese** |
+| ![Community](docs/media/shot-community.png) | ![Michigan in Chinese](docs/media/shot-michigan.png) | ![Mobile](docs/media/shot-mobile.png) |
 
 International students make high-stakes decisions, like when to file for OPT, how long they can stay after graduating, or whether their travel signature is still valid, based on guidance scattered across USCIS, DHS and university pages, plus a lot of group-chat rumor. This tool:
 
@@ -8,6 +18,9 @@ International students make high-stakes decisions, like when to file for OPT, ho
 - **computes a personal timeline** (OPT filing window, grace period, STEM extension, travel signature, reporting deadlines, Form 8843) with a **deterministic rules engine**. Dates never come from an LLM, and each one shows its arithmetic and its source;
 - **watches the official pages for changes** and flags the rules and cached answers that depend on them;
 - **keeps personal data on the user's device.**
+- **has the tools students actually need:** add any deadline to your calendar (.ics with reminders), track passport, visa, I-20, EAD and travel-signature expiry, count OPT unemployment days, check your I-94, and get Form 8843 and treaty basics (highlighted every February to April);
+- **is a home base for the whole move:** after a welcome screen ("hello" in 18 languages, then pick your school), a hub links the F-1 Copilot to Housing, Roommates, Rides, Groceries, Dining, Community, Money & phone and Guides. The whole app recolors itself in the student's school colors.
+- **knows your school:** pick from the 18 Big Ten universities or NYU. Answers never cite another university's internal pages, and every "ask your DSO" points to your own international office.
 
 > **This is an information tool, not legal advice.** Always confirm with your school's Designated School Official (DSO).
 
@@ -83,11 +96,54 @@ Why this matters: in July 2026 DHS published a rule cutting the F-1 grace period
 - **Faithfulness is judged by a small local NLI model** (does the cited passage *entail* the sentence?), not by another LLM. It's English-only, and the report says so.
 - **The refusal threshold is calibrated** by sweeping it and maximizing balanced accuracy (the classes are imbalanced). **Gates ratchet** to measured − 0.05.
 
+### Schools and languages
+- **School-scoped retrieval.** Sources can be tagged with a `school` in `config.yaml`. A student's question excludes other schools' pages *inside* retrieval, before ranking, so an Ohio State student can never get a Rutgers-only deadline cited back to them. Cached answers are keyed per school. Federal rules and the timeline apply to everyone.
+- **Interface in seven languages.** English, 中文 and हिंदी are complete, including all 18 timeline questions. 한국어, Tiếng Việt, Español and বাংলা cover navigation, the welcome screen, the hub, Ask and every disclaimer. Missing strings fall back to English one at a time, and the footer says so. Official source passages, rule names and rule notes deliberately stay in English and are labeled as such: a mistranslated legal deadline is worse than an English sentence.
+- **Dates are localized but computed in UTC**, so they never shift a day across time zones.
+
+### Student resources
+- **No invented data.** The app doesn't make up apartments, stores or restaurants for 19 cities. The Housing, Groceries, Dining and Rides tabs build live Google Maps and site-scoped Google searches around each campus (for example "Korean grocery store near West Lafayette, IN"), so results are current and every school is covered.
+- **Private roommate matching.** An 8-question profile produces a share code (`RM1-` plus 8 digits) that contains no personal data. Comparing two codes gives a weighted compatibility score and the topics to discuss first (smoking and budget weigh more than cooking habits).
+- **Everything personal stays in the browser:** timeline facts, roommate answers and the checklist all live in `localStorage`.
+- **School themes from two colors.** Each school defines only a primary and an accent (`lib/themes.ts`). Hover, soft and deep shades are derived in CSS with `color-mix()`, so a new school is a two-line change. For schools whose signature color is a light gold, the dark partner color carries white text, which keeps contrast readable. Only colors are used, never logos or marks.
+- Roommate matching logic (`lib/roommates.ts`) is unit-tested with `npm test`, and CI runs it.
+
+### F-1 tools
+- **Add to calendar.** Every upcoming timeline date has an "Add to calendar" button, plus one for all of them. `lib/ics.ts` writes RFC 5545 all-day events with 7-day and 1-day alarms, escapes text and folds long lines, so the file imports cleanly into Apple, Google and Outlook calendars.
+- **OPT unemployment counter.** `lib/unemployment.ts` counts days from the EAD start date. Only jobs of at least 20 hours a week stop the count, overlapping jobs are merged, and the limit is 90 days (150 with STEM). It shows the date you'd reach the limit if you stayed unemployed. Unit-tested against hand-worked cases.
+- **Document vault checklist.** Passport, visa, I-20 end date, EAD end date and travel signature (12 months, or 6 on OPT, with month-end clamping). Each gets a status and optional reminders 90, 30 and 7 days ahead. An expired visa is shown neutrally, because it only matters for re-entry. Only dates are stored, never document numbers or scans.
+- **I-94 helper and tax season mode.** Step-by-step for the official CBP site, what to check, and a note on the vacated 2026 fixed-admission-period rule. From February through April, the hub and F-1 pages highlight Form 8843, Form 1040-NR, the five-year exempt-individual rule and tax treaties, linking only to IRS pages.
+
+### Community, money and phone
+- **Verified group chats.** `web/data/communities.json` lists groups per school with platform, owner and the date a maintainer last checked them. It ships empty on purpose: links are added only after checking a group with its organizers. `npm test` rejects any link that isn't https on an allowlisted invite domain (GroupMe, WhatsApp, Discord, Telegram, Slack), including look-alike domains, credentials in URLs and non-invite paths. WeChat groups have no web links, so they use a QR image with a note that codes expire after 7 days. Every group has a Report link, and students can submit a group through a prefilled GitHub issue. A safety note warns about fee and "deposit" scams.
+- **Student organizations, buddy programs and places of worship** link to site-scoped searches on the school's own domain and map searches near campus, so nothing is invented or goes stale.
+- **Money & phone** covers opening a bank account (requirements vary, so call ahead), building credit from zero, and eSIM and prepaid plans, with no claims about specific banks.
+
+### Accessibility and privacy
+- **Keyboard and screen readers.** A skip link is the first Tab stop (checked in a headless browser), every input has a label, the language picker is a labeled `<select>`, progress bars use `role="progressbar"`, icons are `aria-hidden`, focus rings use the school color, and animations respect `prefers-reduced-motion`.
+- **Contrast is tested for every school.** `lib/contrast.test.ts` computes WCAG 2.1 ratios for all 19 themes wherever text sits on them: white on primary, primary on the page, primary on tinted chips, and text on the warning tint. It caught UCLA Blue at 4.44:1 on chips, so UCLA now uses the darker blue from its own palette.
+- **Privacy page** (`/privacy`) says exactly what stays in the browser and what reaches the server, and has a button that clears everything the app stored on the device.
+- **Anonymous analytics, off by default.** Set `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` to load Plausible (no cookies, no cross-site tracking). The error page reports only an error's type, never its message or any personal data.
+
 ### Web app and monitoring
-- **Privacy by construction.** Timeline facts live in the browser's `localStorage`. The API computes the timeline and discards the facts, with no persistence, no logging and `Cache-Control: no-store`. A test asserts the data directory is byte-for-byte unchanged after a timeline request. The API binds to `127.0.0.1`, and CORS only allows the local UI.
+- **Privacy by construction.** Timeline facts live in the browser's `localStorage`. The API computes the timeline and discards the facts, with no persistence, no logging and `Cache-Control: no-store`. A test asserts the data directory is byte-for-byte unchanged after a timeline request. CORS allows only the local UI unless `COPILOT_ALLOWED_ORIGINS` names your deployed site.
 - **Thin framework layer.** All behavior lives in `api/service.py` and is tested with plain function calls. `api/app.py` is about 70 lines of FastAPI.
 - **Change detection closes the loop.** `copilot recheck` re-crawls and diffs page hashes. It reports changed, new and unreachable pages and the chunks added or removed, flags rules whose source changed, lists rules whose source isn't crawled (IRS, eCFR), and marks only the cached answers that cited a changed page as stale. A weekly GitHub Action diffs against the snapshot and **opens an issue** listing the rules to re-verify.
 - **Dates are formatted in UTC in the UI.** `new Date("2027-05-15")` is UTC midnight, so formatting it in New York time would show May 14. That's a small bug with real consequences for a deadline tool.
+
+## Deploy
+
+**Web app on Vercel.** Import the repo, set **Root Directory** to `web`, and add the environment variable `NEXT_PUBLIC_API_URL` with your API's URL. Optionally add `NEXT_PUBLIC_PLAUSIBLE_DOMAIN`.
+
+**API in Docker.** The `Dockerfile` installs CPU-only PyTorch, crawls the allowlisted sources and embeds them at build time, so the server starts with a ready index. It needs about 1.5 GB of RAM, so use an instance with 2 GB:
+- **Render:** New → Blueprint → this repo (`render.yaml` selects the 2 GB Standard plan; the 512 MB free plan runs out of memory).
+- **Fly.io:** `fly launch --no-deploy`, then `fly deploy` (`fly.toml` asks for 2 GB and stops the machine when idle).
+
+On either host, set `COPILOT_ALLOWED_ORIGINS` to your Vercel URL. Rebuild the image to refresh the corpus; the weekly recheck Action tells you when sources changed.
+
+## Rule review
+
+`python scripts/rule_review_packet.py` generates `docs/rule-review.md` from the rule files: a one-page checklist per rule for a DSO to mark correct, needs a change, or different at our school. `docs/dso-email.md` is the request email. Reviewed rules get the reviewer and date in their changelog.
 
 ## Setup (macOS, Apple Silicon)
 
@@ -112,7 +168,7 @@ cp .env.local.example .env.local
 npm install
 npm run dev
 ```
-Open http://localhost:3000.
+Open http://localhost:3000. Every visit opens on the welcome screen; returning students get a one-tap Continue to their school's hub.
 
 ### CLI
 ```bash
@@ -157,7 +213,12 @@ src/copilot/
   api/service.py       framework-free service layer
   api/app.py           FastAPI routes
   cli.py               `copilot` command
-web/                   Next.js app: Ask, My timeline, Rules & sources
+web/                   Next.js app (hub, F-1 Copilot, tools, community, privacy)
+  lib/                 ics, unemployment, documents, communities, contrast, i18n (+ tests)
+  data/communities.json  curated, validated group links
+docs/                  rule-review packet, DSO email, demo video and screenshots
+scripts/               rule_review_packet.py
+Dockerfile render.yaml fly.toml   API deployment
 eval/                  seed dataset, thresholds, snapshot, results
 .github/workflows/     ci.yml (tests, eval gates, web build) · recheck.yml (weekly monitor)
 tests/                 240+ tests, offline, no model downloads
@@ -167,4 +228,4 @@ tests/                 240+ tests, offline, no model downloads
 
 - Built **F-1 Compliance Copilot**, a citation-grounded RAG assistant over 532 passages from official US immigration sources. It uses hybrid BM25 + multilingual dense retrieval with Reciprocal Rank Fusion and reaches **0.90 recall@5 / 0.83 MRR** on a 50-question eval set in 5 languages, with a citation validator that strips unsupported LLM sentences.
 - Designed a **deterministic, versioned rules engine** (Python, YAML) that computes students' visa deadlines with three-valued logic for missing facts and step-by-step explanations generated by the computation itself. It's covered by **240+ tests**, including pinned outputs for every rule and calendar edge cases.
-- Built the **evaluation and monitoring pipeline**: a data-calibrated refusal gate (**8/8 off-topic questions refused, 0 false refusals**), ratcheting CI quality gates on a frozen corpus, NLI-based faithfulness scoring, and a weekly GitHub Action that diffs official pages and opens issues for affected rules. Shipped with a FastAPI + Next.js UI that keeps personal data in the browser.
+- Built the **evaluation and monitoring pipeline**: a data-calibrated refusal gate (**8/8 off-topic questions refused, 0 false refusals**), ratcheting CI quality gates on a frozen corpus, NLI-based faithfulness scoring, and a weekly GitHub Action that diffs official pages and opens issues for affected rules. Shipped with a FastAPI + Next.js UI in 7 languages for 19 universities, with WCAG contrast tests for every school theme and personal data kept in the browser.

@@ -116,8 +116,8 @@ class QAPipeline:
             reason=reason, dropped_sentences=dropped or [],
         )
 
-    def ask(self, question: str) -> Answer:
-        result = self.retriever.search(question)
+    def ask(self, question: str, exclude_sources: set[str] | None = None) -> Answer:
+        result = self.retriever.search(question, exclude_sources=exclude_sources)
         conf = result.confidence
         if not result.hits or conf < self.cfg.min_confidence:
             return self._refuse(question, "low_retrieval_confidence", conf)

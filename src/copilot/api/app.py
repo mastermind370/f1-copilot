@@ -17,6 +17,7 @@ from copilot.config import AppConfig
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=1, max_length=1000)
+    school: str | None = Field(default=None, max_length=40)
 
 
 class TimelineRequest(BaseModel):
@@ -50,7 +51,7 @@ def create_app(cfg: AppConfig, service: CopilotService | None = None,
 
     @app.post("/api/ask")
     def ask(req: AskRequest) -> dict[str, Any]:
-        return _call(svc.ask, req.question)  # type: ignore[no-any-return]
+        return _call(svc.ask, req.question, req.school)  # type: ignore[no-any-return]
 
     @app.post("/api/timeline")
     def timeline(req: TimelineRequest, response: Response) -> dict[str, Any]:

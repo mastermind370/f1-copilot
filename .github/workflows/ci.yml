@@ -60,5 +60,7 @@ jobs:
         with:
           node-version: "22"
       - run: npm install --no-audit --no-fund
+      # Unit tests for the schedule planner and roommate matching logic.
+      - run: npm test
       # `next build` type-checks every page and component.
       - run: npm run build

@@ -73,18 +73,27 @@ class HybridRetriever:
             raise IndexNotReadyError(f"{len(missing)} embedded chunks missing from DB; run `copilot reindex`")
         return cls([by_id[i] for i in ids], matrix, embedder, cfg)
 
-    def search(self, query: str, top_k: int | None = None) -> RetrievalResult:
+    def search(
+        self, query: str, top_k: int | None = None, exclude_sources: set[str] | None = None
+    ) -> RetrievalResult:
+        """exclude_sources: source names to leave out, e.g. other schools' international
+        office pages, so a student never gets another university's internal rules cited."""
         top_k = top_k or self.cfg.top_k
         if not self.chunks:
             return RetrievalResult(hits=[], confidence=0.0)
-        cand = min(self.cfg.candidate_k, len(self.chunks))
+        allowed = np.ones(len(self.chunks), dtype=bool)
+        if exclude_sources:
+            allowed = np.array([c.source not in exclude_sources for c in self.chunks])
+        if not allowed.any():
+            return RetrievalResult(hits=[], confidence=0.0)
+        cand = min(self.cfg.candidate_k, int(allowed.sum()))
 
-        bm25_scores = self.bm25.scores(tokenize(query))
+        bm25_scores = np.where(allowed, self.bm25.scores(tokenize(query)), 0.0)
         bm25_order = [int(i) for i in np.argsort(-bm25_scores, kind="stable")[:cand]
                       if bm25_scores[i] > 0]
 
         q = self.embedder.embed_query(query).astype(np.float32)
-        dense_scores = self.embeddings @ q
+        dense_scores = np.where(allowed, self.embeddings @ q, -np.inf)
         dense_order = [int(i) for i in np.argsort(-dense_scores, kind="stable")[:cand]]
 
         fused = reciprocal_rank_fusion([bm25_order, dense_order], k=self.cfg.rrf_k)

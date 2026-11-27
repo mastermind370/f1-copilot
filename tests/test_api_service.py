@@ -129,3 +129,29 @@ class TestMetadata:
     def test_health(self, svc: CopilotService) -> None:
         h = svc.health()
         assert h["ok"] and h["index"]["chunks"] > 0 and "cached_answers" in h["index"]
+
+
+class TestSchools:
+    @pytest.fixture
+    def school_cfg(self, cfg: AppConfig) -> AppConfig:
+        return replace(cfg, sources=[replace(SOURCE, school="rutgers")])
+
+    def test_school_specific_pages_only_for_that_school(self, school_cfg: AppConfig) -> None:
+        svc = CopilotService(school_cfg, embedder_factory=FakeEmbedder, llm=None)
+        assert svc.school_exclusions("rutgers") == set()
+        assert svc.school_exclusions("ohio-state") == {"test"}
+        assert svc.school_exclusions(None) == {"test"}
+        assert not svc.ask(Q, school="rutgers")["refused"]
+        other = svc.ask(Q, school="ohio-state")
+        assert other["refused"] and other["citations"] == []  # only source belongs to Rutgers
+
+    def test_cache_is_per_school(self, school_cfg: AppConfig) -> None:
+        svc = CopilotService(school_cfg, embedder_factory=FakeEmbedder, llm=None)
+        svc.ask(Q, school="rutgers")
+        assert svc.ask(Q, school="rutgers")["cached"] is True
+        assert svc.ask(Q, school="ohio-state")["cached"] is False
+
+    @pytest.mark.parametrize("school", ["../etc", "x" * 41, "a b"])
+    def test_invalid_school(self, svc: CopilotService, school: str) -> None:
+        with pytest.raises(BadRequest):
+            svc.ask(Q, school=school)

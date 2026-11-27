@@ -110,10 +110,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       cache: "no-store",
     });
   } catch {
-    throw new ApiError(
-      `Can't reach the Copilot API at ${API_URL}. Start it with \`copilot serve\`.`,
-      0,
-    );
+    throw new ApiError("API_UNREACHABLE", 0);
   }
   if (!res.ok) {
     let detail = res.statusText;
@@ -130,8 +127,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  ask: (question: string) =>
-    request<AskResponse>("/api/ask", { method: "POST", body: JSON.stringify({ question }) }),
+  ask: (question: string, school: string | null) =>
+    request<AskResponse>("/api/ask", { method: "POST", body: JSON.stringify({ question, school }) }),
   timeline: (facts: Facts, asOf?: string) =>
     request<Timeline>("/api/timeline", {
       method: "POST",
@@ -145,13 +142,34 @@ export const api = {
 /** Format a YYYY-MM-DD date without timezone drift.
  *  new Date("2027-05-15") is UTC midnight, so formatting it in New York time would
  *  show May 14. Always format date-only values in UTC. */
-export function formatDate(iso: string | null): string {
+export function formatDate(iso: string | null, locale?: string): string {
   if (!iso) return "";
   const d = new Date(`${iso}T00:00:00Z`);
-  return d.toLocaleDateString(undefined, {
+  return d.toLocaleDateString(locale, {
     timeZone: "UTC",
     year: "numeric",
     month: "short",
     day: "numeric",
   });
+}
+
+/** Turn any thrown error into a message for the user, in their language. */
+export function describeError(e: unknown, t: (key: "error.api" | "error.generic") => string): string {
+  if (e instanceof ApiError) return e.status === 0 ? t("error.api") : e.message;
+  return t("error.generic");
+}
+
+/** "Feb 14 → Jul 14, 2027" for windows; repeats the year only when it differs. */
+export function formatRange(start: string | null, end: string | null, locale?: string): string {
+  if (!start || !end) return formatDate(start ?? end, locale);
+  const sameYear = start.slice(0, 4) === end.slice(0, 4);
+  const s = new Date(`${start}T00:00:00Z`).toLocaleDateString(locale, {
+    timeZone: "UTC", month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" }),
+  });
+  return `${s} → ${formatDate(end, locale)}`;
+}
+
+/** Card titles read better without the trailing "by"/"until" meant for "label: date" lines. */
+export function shortLabel(label: string): string {
+  return label.replace(/\s+(by|until)$/i, "");
 }

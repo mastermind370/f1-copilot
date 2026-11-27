@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 import textwrap
 from dataclasses import asdict
@@ -375,7 +376,9 @@ def cmd_eval_resolve(cfg: AppConfig, args: argparse.Namespace) -> int:
 def cmd_eval_snapshot(cfg: AppConfig, args: argparse.Namespace) -> int:
     from copilot.evaluation.dataset import write_snapshot
 
-    excluded = set(cfg.evaluation.snapshot_exclude_sources)
+    # University pages are copyrighted, so every school-tagged source stays out of the committed
+    # snapshot automatically, on top of anything listed in snapshot_exclude_sources.
+    excluded = set(cfg.evaluation.snapshot_exclude_sources) | {s.name for s in cfg.sources if s.school}
     with Store(cfg.data_dir) as store:
         chunks = [c for c in store.all_chunks() if c.source not in excluded]
     if not chunks:
@@ -461,8 +464,14 @@ def cmd_serve(cfg: AppConfig, args: argparse.Namespace) -> int:
 
     from copilot.api.app import create_app
 
-    print(f"F-1 Copilot API on http://{args.host}:{args.port}  (docs at /docs)")
-    uvicorn.run(create_app(cfg), host=args.host, port=args.port, log_level="warning")
+    # In production, set COPILOT_ALLOWED_ORIGINS to your web app's URL(s), comma-separated,
+    # e.g. https://f1-copilot.vercel.app. Localhost origins are the default for development.
+    origins = [o.strip().rstrip("/") for o in os.environ.get("COPILOT_ALLOWED_ORIGINS", "").split(",") if o.strip()]
+    port = int(os.environ.get("PORT", args.port))  # Render, Fly and Hugging Face set PORT
+    print(f"F-1 Copilot API on http://{args.host}:{port}  (docs at /docs)")
+    if origins:
+        print(f"Allowed origins: {', '.join(origins)}")
+    uvicorn.run(create_app(cfg, allowed_origins=origins or None), host=args.host, port=port, log_level="warning")
     return 0
 
 

@@ -18,6 +18,7 @@ class Source:
     name: str
     seeds: list[str]
     allowed_prefixes: list[str]
+    school: str | None = None  # set for one university's own pages; None = applies to everyone
 
 
 @dataclass(frozen=True)
