@@ -26,8 +26,6 @@ jobs:
     name: Retrieval + refusal quality gates
     runs-on: ubuntu-latest
     needs: tests
-    # Runs only once a frozen corpus snapshot has been committed.
-    if: hashFiles('eval/snapshot/chunks.jsonl') != ''
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
