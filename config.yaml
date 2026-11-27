@@ -1,0 +1,63 @@
+# F-1 Compliance Copilot configuration.
+# Everything tunable lives here so behavior changes are reviewable in git.
+
+data_dir: data
+
+dso_message: >-
+  Please contact your school's Designated School Official (DSO) at the
+  international student office. They can answer questions about your record.
+
+sources:
+  # Only URLs that start with one of `allowed_prefixes` are ever fetched.
+  - name: uscis
+    seeds:
+      - https://www.uscis.gov/working-in-the-united-states/students-and-exchange-visitors
+      - https://www.uscis.gov/working-in-the-united-states/students-and-exchange-visitors/optional-practical-training-opt-for-f-1-students
+    allowed_prefixes:
+      - https://www.uscis.gov/working-in-the-united-states/students-and-exchange-visitors
+
+  - name: study_in_the_states
+    seeds:
+      - https://studyinthestates.dhs.gov/students
+    allowed_prefixes:
+      - https://studyinthestates.dhs.gov/students
+
+  - name: ice_sevp
+    seeds:
+      - https://www.ice.gov/sevis
+    allowed_prefixes:
+      - https://www.ice.gov/sevis
+
+  # Example university office. Replace with your school's international office pages.
+  - name: rutgers_global
+    seeds:
+      - https://global.rutgers.edu/
+    allowed_prefixes:
+      - https://global.rutgers.edu/
+
+crawl:
+  user_agent: "F1-Copilot/0.1 (student research project; respects robots.txt)"
+  delay_seconds: 1.0        # politeness delay between requests to the same source
+  timeout_seconds: 20.0
+  max_pages_per_source: 25
+  max_depth: 1              # 0 = seeds only, 1 = seeds + pages they link to
+
+chunking:
+  max_words: 220
+  overlap_words: 40         # only used when one paragraph is longer than max_words
+  min_words: 5              # drops crumbs like "Back to top"
+
+retrieval:
+  embedding_model: intfloat/multilingual-e5-small   # multilingual now, so Stage 3 needs no re-index
+  top_k: 5                  # passages given to the LLM
+  candidate_k: 30           # depth of each ranked list before fusion
+  rrf_k: 60                 # standard Reciprocal Rank Fusion constant
+  min_confidence: 0.80      # top dense cosine score below this -> refuse. Calibrated in Stage 3.
+
+llm:
+  provider: ollama          # ollama | openai | none (none = extractive answers, no LLM)
+  model: qwen2.5:7b
+  base_url: http://localhost:11434
+  api_key_env: OPENAI_API_KEY   # only used by the openai provider
+  temperature: 0.0
+  timeout_seconds: 120.0
