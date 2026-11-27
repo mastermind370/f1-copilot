@@ -6,6 +6,7 @@
     copilot ask "question" [--json] [--debug]
     copilot timeline --facts FILE [--set k=v] [--as-of DATE] [--json]
     copilot rules check [--strict]
+    copilot eval run|resolve|snapshot|sample
     copilot stats
 """
 
@@ -235,6 +236,198 @@ def cmd_rules_check(cfg: AppConfig, args: argparse.Namespace) -> int:
     return 1 if (stale and args.strict) else 0
 
 
+def _eval_items(cfg: AppConfig, args: argparse.Namespace):  # type: ignore[no-untyped-def]
+    from copilot.evaluation.dataset import load_dataset
+
+    if args.dataset:
+        paths = [Path(args.dataset)] if Path(args.dataset).is_file() else sorted(Path().glob(args.dataset))
+    else:
+        paths = sorted(cfg.evaluation.base_dir.glob(cfg.evaluation.dataset_glob))
+    if not paths:
+        raise FileNotFoundError(f"no dataset files found for {args.dataset or cfg.evaluation.dataset_glob}")
+    return load_dataset(paths)
+
+
+def _eval_corpus(cfg: AppConfig, corpus: str | None):  # type: ignore[no-untyped-def]
+    from copilot.evaluation.dataset import load_snapshot
+
+    if corpus:
+        return load_snapshot(Path(corpus)), corpus
+    with Store(cfg.data_dir) as store:
+        return store.all_chunks(), "live index"
+
+
+def cmd_eval_run(cfg: AppConfig, args: argparse.Namespace) -> int:
+    from datetime import UTC, datetime
+
+    import yaml
+
+    from copilot.answer import QAPipeline
+    from copilot.evaluation.dataset import DatasetError, resolve_gold
+    from copilot.evaluation.metrics import check_thresholds, ratchet_thresholds
+    from copilot.evaluation.report import to_markdown
+    from copilot.evaluation.runner import results_as_dicts, run_items, summarize
+    from copilot.llm import make_llm
+    from copilot.retrieval import HybridRetriever, IndexNotReadyError
+
+    try:
+        items = _eval_items(cfg, args)
+        chunks, corpus_name = _eval_corpus(cfg, args.corpus)
+    except (DatasetError, FileNotFoundError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    if not chunks:
+        print("error: corpus is empty; run `copilot ingest` or pass --corpus", file=sys.stderr)
+        return 2
+
+    embedder = _embedder(cfg)
+    if args.corpus:
+        print(f"Embedding {len(chunks)} snapshot chunks...")
+        matrix = embedder.embed_passages([c.index_text for c in chunks])
+        retriever = HybridRetriever(chunks, matrix, embedder, cfg.retrieval)
+    else:
+        with Store(cfg.data_dir) as store:
+            try:
+                retriever = HybridRetriever.from_store(store, embedder, cfg.retrieval)
+            except IndexNotReadyError as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                return 2
+
+    answers = args.answers or args.faithfulness
+    pipeline = (QAPipeline(retriever, make_llm(cfg.llm), cfg.retrieval, cfg.dso_message)
+                if answers else None)
+    judge = None
+    if args.faithfulness:
+        from copilot.evaluation.faithfulness import NLIJudge
+
+        judge = NLIJudge(cfg.evaluation.faithfulness_model)
+
+    resolution = resolve_gold(items, retriever.chunks)
+    results = run_items(items, resolution, retriever, pipeline, judge)
+    summary = summarize(results, cfg.retrieval.min_confidence)
+    meta = {
+        "corpus": corpus_name, "n_chunks": len(retriever.chunks),
+        "embedding_model": cfg.retrieval.embedding_model,
+        "answers": f"{cfg.llm.provider}:{cfg.llm.model}" if answers else "retrieval only",
+        "run_at": datetime.now(UTC).replace(microsecond=0).isoformat(),
+        "too_broad_gold": resolution.too_broad,
+    }
+
+    out_dir = cfg.evaluation.results_dir
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "latest.json").write_text(json.dumps(
+        {"meta": meta, "summary": summary, "items": results_as_dicts(results)},
+        indent=2, ensure_ascii=False, default=str))
+    md = to_markdown(summary, meta)
+    (out_dir / "latest.md").write_text(md)
+    print(md)
+    print(f"Wrote {out_dir / 'latest.json'} and {out_dir / 'latest.md'}")
+
+    thresholds_path = cfg.evaluation.thresholds
+    if args.update_thresholds:
+        current = yaml.safe_load(thresholds_path.read_text()) or {}
+        new = ratchet_thresholds(summary, current)
+        header = ("# CI quality gates, ratcheted to (measured - 0.05) by "
+                  "`copilot eval run --update-thresholds`.\n")
+        thresholds_path.write_text(header + yaml.safe_dump(new, sort_keys=True))
+        print(f"Updated {thresholds_path}")
+
+    if args.check:
+        gates = yaml.safe_load(Path(args.check).read_text()) or {}
+        failures = check_thresholds(summary, gates)
+        if failures:
+            print("\nQUALITY GATE FAILED:")
+            for f in failures:
+                print(f"  - {f}")
+            return 1
+        print("\nAll quality gates passed.")
+    return 0
+
+
+def cmd_eval_resolve(cfg: AppConfig, args: argparse.Namespace) -> int:
+    from copilot.evaluation.dataset import TOO_BROAD, DatasetError, resolve_gold
+
+    try:
+        items = _eval_items(cfg, args)
+        chunks, corpus_name = _eval_corpus(cfg, args.corpus)
+    except (DatasetError, FileNotFoundError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    res = resolve_gold(items, chunks)
+    by_id = {c.chunk_id: c for c in chunks}
+    print(f"Resolving {len(items)} items against {corpus_name} ({len(chunks)} chunks)\n")
+    for item in items:
+        if item.should_refuse:
+            continue
+        ids = res.gold_ids[item.id]
+        flag = "UNRESOLVED" if not ids else ("TOO BROAD" if len(ids) > TOO_BROAD else "ok")
+        print(f"  {item.id:<18} {len(ids):>4} gold  [{flag}]")
+        if args.verbose_matches and ids:
+            for cid in sorted(ids)[:3]:
+                c = by_id[cid]
+                print(f"      {cid} {c.url}\n        {c.text[:110]}...")
+    print(f"\nunresolved: {len(res.unresolved)}  too broad (> {TOO_BROAD}): {len(res.too_broad)}")
+    return 0
+
+
+def cmd_eval_snapshot(cfg: AppConfig, args: argparse.Namespace) -> int:
+    from copilot.evaluation.dataset import write_snapshot
+
+    excluded = set(cfg.evaluation.snapshot_exclude_sources)
+    with Store(cfg.data_dir) as store:
+        chunks = [c for c in store.all_chunks() if c.source not in excluded]
+    if not chunks:
+        print("error: no chunks to snapshot; run `copilot ingest` first", file=sys.stderr)
+        return 2
+    out = Path(args.out) if args.out else cfg.evaluation.snapshot
+    n = write_snapshot(chunks, out)
+    sources = sorted({c.source for c in chunks})
+    print(f"Wrote {n} chunks from {', '.join(sources)} to {out}")
+    print(f"(excluded sources: {', '.join(sorted(excluded)) or 'none'})")
+    return 0
+
+
+def cmd_eval_sample(cfg: AppConfig, args: argparse.Namespace) -> int:
+    import random
+
+    from copilot.evaluation.dataset import DatasetError, resolve_gold
+
+    try:
+        items = _eval_items(cfg, args)
+        chunks, _ = _eval_corpus(cfg, args.corpus)
+    except (DatasetError, FileNotFoundError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    covered = set().union(*resolve_gold(items, chunks).gold_ids.values())
+    pool = [c for c in chunks if c.chunk_id not in covered and len(c.text.split()) >= 25]
+    rng = random.Random(args.seed)
+    by_source: dict[str, list] = {}  # type: ignore[type-arg]
+    for c in pool:
+        by_source.setdefault(c.source, []).append(c)
+    for lst in by_source.values():
+        rng.shuffle(lst)
+    picked = []
+    while len(picked) < args.n and any(by_source.values()):
+        for src in sorted(by_source):  # round-robin so every source is represented
+            if by_source[src] and len(picked) < args.n:
+                picked.append(by_source[src].pop())
+
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with out.open("w", encoding="utf-8") as f:
+        for c in picked:
+            f.write(json.dumps({
+                "id": f"draft-{c.chunk_id}", "language": "en", "question": "",
+                "should_refuse": False, "group": "",
+                "gold": [{"phrases": [" ".join(c.text.split()[:8])], "url_contains": c.url}],
+                "translation_of": None, "notes": "",
+                "_heading": c.heading, "_chunk_text": c.text,
+            }, ensure_ascii=False) + "\n")
+    print(f"Wrote {len(picked)} draft items to {out}. Fill in each \"question\" with something a "
+          "student would ask that this passage answers, then move them into eval/dataset/.")
+    return 0
+
+
 def cmd_stats(cfg: AppConfig, args: argparse.Namespace) -> int:
     with Store(cfg.data_dir) as store:
         print(json.dumps(store.stats(), indent=2))
@@ -281,6 +474,37 @@ def build_parser() -> argparse.ArgumentParser:
     r = rsub.add_parser("check", help="validate all rules and report verification age")
     r.add_argument("--strict", action="store_true", help="exit non-zero if any rule is stale")
     r.set_defaults(func=cmd_rules_check)
+
+    s = sub.add_parser("eval", help="evaluation harness")
+    esub = s.add_subparsers(dest="eval_command", required=True)
+
+    def _common(e: argparse.ArgumentParser) -> None:
+        e.add_argument("--dataset", help="JSONL file or glob (default: evaluation.dataset_glob)")
+        e.add_argument("--corpus", help="snapshot JSONL to evaluate against (default: live index)")
+
+    e = esub.add_parser("run", help="run the eval and write eval/results/latest.{json,md}")
+    _common(e)
+    e.add_argument("--answers", action="store_true", help="also run full answering (uses llm.provider)")
+    e.add_argument("--faithfulness", action="store_true", help="NLI-judge English answers (implies --answers)")
+    e.add_argument("--check", metavar="THRESHOLDS", help="exit 1 if any quality gate fails")
+    e.add_argument("--update-thresholds", action="store_true", help="ratchet gates to measured - 0.05")
+    e.set_defaults(func=cmd_eval_run)
+
+    e = esub.add_parser("resolve", help="show which chunks each item's gold matchers hit")
+    _common(e)
+    e.add_argument("--verbose-matches", action="store_true")
+    e.set_defaults(func=cmd_eval_resolve)
+
+    e = esub.add_parser("snapshot", help="freeze the public-domain corpus for reproducible CI")
+    e.add_argument("--out", help="output path (default: evaluation.snapshot)")
+    e.set_defaults(func=cmd_eval_snapshot)
+
+    e = esub.add_parser("sample", help="draft new eval items from uncovered chunks")
+    _common(e)
+    e.add_argument("--n", type=int, default=25)
+    e.add_argument("--seed", type=int, default=7)
+    e.add_argument("--out", default="eval/drafts/drafts.jsonl")
+    e.set_defaults(func=cmd_eval_sample)
 
     s = sub.add_parser("stats", help="show index statistics")
     s.set_defaults(func=cmd_stats)

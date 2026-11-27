@@ -70,6 +70,18 @@ class RulesConfig:
 
 
 @dataclass(frozen=True)
+class EvalConfig:
+    dataset_glob: str = "eval/dataset/*.jsonl"
+    thresholds: Path = Path("eval/thresholds.yaml")
+    results_dir: Path = Path("eval/results")
+    snapshot: Path = Path("eval/snapshot/chunks.jsonl")
+    # Only public-domain US government text goes in the committed snapshot.
+    snapshot_exclude_sources: tuple[str, ...] = ("rutgers_global",)
+    faithfulness_model: str = "cross-encoder/nli-deberta-v3-xsmall"
+    base_dir: Path = Path(".")
+
+
+@dataclass(frozen=True)
 class AppConfig:
     data_dir: Path
     sources: list[Source]
@@ -79,6 +91,7 @@ class AppConfig:
     retrieval: RetrievalConfig = field(default_factory=RetrievalConfig)
     llm: LLMConfig = field(default_factory=LLMConfig)
     rules: RulesConfig = field(default_factory=RulesConfig)
+    evaluation: EvalConfig = field(default_factory=EvalConfig)
 
     def source(self, name: str) -> Source:
         for s in self.sources:
@@ -111,6 +124,18 @@ def load_config(path: str | Path) -> AppConfig:
         max_age_days=int(rules_raw.get("max_age_days", 180)),
     )
 
+    ev = dict(raw.get("evaluation", {}))
+    evaluation = EvalConfig(
+        dataset_glob=str(ev.get("dataset_glob", EvalConfig.dataset_glob)),
+        thresholds=_resolve(path.parent, ev.get("thresholds", EvalConfig.thresholds)),
+        results_dir=_resolve(path.parent, ev.get("results_dir", EvalConfig.results_dir)),
+        snapshot=_resolve(path.parent, ev.get("snapshot", EvalConfig.snapshot)),
+        snapshot_exclude_sources=tuple(ev.get("snapshot_exclude_sources",
+                                              EvalConfig.snapshot_exclude_sources)),
+        faithfulness_model=str(ev.get("faithfulness_model", EvalConfig.faithfulness_model)),
+        base_dir=path.parent.resolve(),
+    )
+
     return AppConfig(
         data_dir=_resolve(path.parent, raw.get("data_dir", "data")),
         sources=sources,
@@ -120,4 +145,5 @@ def load_config(path: str | Path) -> AppConfig:
         retrieval=RetrievalConfig(**raw.get("retrieval", {})),
         llm=LLMConfig(**raw.get("llm", {})),
         rules=rules,
+        evaluation=evaluation,
     )

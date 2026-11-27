@@ -10,7 +10,7 @@ A tool that helps international students in the US understand F-1 rules. It answ
 |---|---|---|
 | 1 | Allowlisted ingestion + hybrid retrieval + grounded, cited Q&A (CLI) | ✅ |
 | 2 | Deterministic rules engine + personal timeline | ✅ |
-| 3 | Eval harness (faithfulness, refusal, recall@k, multilingual) + CI gates | ⏳ |
+| 3 | Eval harness (faithfulness, refusal, recall@k, multilingual) + CI gates | ✅ |
 | 4 | FastAPI + Next.js UI, on-device user data, source change detection | ⏳ |
 
 ## Architecture
@@ -55,6 +55,15 @@ config.yaml ──►  Crawler ─► Store ─► Chunker ─► Embeddings    
 - **Calendar edge cases are isolated** in `dates.py`: month-end clamping (Aug 31 + 6 months = Feb 28) and weekend rolling for IRS dates (holidays are explicitly *not* modeled, and the rule says so).
 - **Rules can go stale.** `copilot rules check --strict` fails if any rule hasn't been re-verified within `max_age_days`. That matters: in 2026 a DHS rule that would have cut the F-1 grace period from 60 to 30 days was published, then vacated by a federal court before taking effect. The grace-period rule carries a note explaining this.
 
+### Evaluation (Stage 3)
+- **Gold evidence is described by matchers, not hard-coded chunk IDs.** Chunk IDs are content-addressed, so any edit to a source page changes them, and a list of gold IDs would silently go stale. Each eval item instead says what its evidence looks like (`{"phrases": ["I-901", "fee"]}`). Matchers are resolved against the current corpus at run time, and the resolved IDs are saved with the results. An item that stops resolving is reported, which is itself an early warning that a page changed.
+- **Frozen snapshot for CI.** Live government sites change and sometimes block bots, so CI evaluates against `eval/snapshot/chunks.jsonl`, a committed snapshot of the corpus. Only public-domain US government text goes in it; university pages are excluded by config.
+- **CI gates only deterministic metrics.** Retrieval recall@k, MRR and the refusal gate are reproducible and run on every push. LLM-dependent metrics (answer rate, citation hit rate, faithfulness) are run locally and reported, because a non-deterministic metric in CI just makes it flaky.
+- **Faithfulness uses a small local NLI model as the judge,** not another LLM. A sentence counts as supported only if a passage it cites *entails* it. That's cheap and deterministic, and avoids the "LLM grades itself" problem. It's English-only, and the report says so.
+- **The refusal threshold is calibrated from data.** `eval run` sweeps thresholds and picks the best balanced accuracy, treating refusal as binary classification with imbalanced classes. Ties favor answering real questions.
+- **Gates ratchet.** `--update-thresholds` sets each gate to the measured value minus 0.05, so a later change that makes things worse fails CI.
+- **Cross-lingual gap.** Every translated question links to its English original (`translation_of`), so the report shows how much retrieval quality drops for the *same* question in another language.
+
 ## Setup (macOS, Apple Silicon)
 
 ```bash
@@ -86,6 +95,20 @@ copilot timeline --facts my-facts.yaml --json
 copilot rules check
 ```
 `my-facts.yaml` is git-ignored. Your personal data never leaves your machine.
+
+### Evaluate
+```bash
+copilot eval resolve --verbose-matches       # check every eval item's gold resolves
+copilot eval run                             # retrieval + refusal metrics on the live index
+copilot eval run --answers                   # + end-to-end answers (uses llm.provider)
+copilot eval run --answers --faithfulness    # + NLI faithfulness (downloads ~280 MB judge)
+copilot eval snapshot                        # freeze the public-domain corpus for CI
+copilot eval run --corpus eval/snapshot/chunks.jsonl --update-thresholds
+copilot eval sample --n 25                   # draft new items from uncovered chunks
+```
+Results go to `eval/results/latest.md` and `latest.json`.
+
+**Growing the eval set from 50 to 300:** run `copilot eval sample --n 25`. It picks chunks no existing item covers, round-robin across sources, and writes drafts to `eval/drafts/` with the passage text included. Write the question a student would ask that the passage answers, fix the gold phrase if needed, add translations (`translation_of`), and move the finished items into `eval/dataset/`. Add some *should-refuse* questions too, including near-misses that sound on-topic but aren't answered by the corpus.
 
 ### Rules shipped (v1, verified 2026-11-27)
 
@@ -127,6 +150,18 @@ src/copilot/
     dates.py         month arithmetic, business-day rolling
     schema.py        rule schema + validator (all errors reported at once)
     engine.py        3-valued conditions, traced date expressions, evaluate()
+  evaluation/
+    dataset.py       eval items, gold matchers, resolution, corpus snapshots
+    metrics.py       recall@k, MRR, refusal stats, calibration, threshold gates (pure)
+    faithfulness.py  sentence-level NLI faithfulness judge
+    runner.py        runs items through retrieval/answering, builds the summary
+    report.py        Markdown report
   cli.py             `copilot` command
-tests/               175 tests; offline, no model downloads
+eval/
+  dataset/seed.jsonl 50 items: 30 en, 12 translated (zh/hi/ko/es), 8 should-refuse
+  thresholds.yaml    CI quality gates
+  snapshot/          frozen corpus for CI (public-domain sources only)
+  results/           latest eval results
+.github/workflows/   CI: tests + rule freshness + eval gates
+tests/               209 tests; offline, no model downloads
 ```

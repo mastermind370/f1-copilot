@@ -65,3 +65,11 @@ llm:
 rules:
   dir: rules                # versioned YAML rules for the deterministic timeline engine
   max_age_days: 180         # rules not re-verified within this many days are flagged stale
+
+evaluation:
+  dataset_glob: eval/dataset/*.jsonl
+  thresholds: eval/thresholds.yaml
+  results_dir: eval/results
+  snapshot: eval/snapshot/chunks.jsonl     # frozen corpus committed for reproducible CI
+  snapshot_exclude_sources: [rutgers_global]   # only public-domain US government text is committed
+  faithfulness_model: cross-encoder/nli-deberta-v3-xsmall   # small local NLI judge (~280 MB)
