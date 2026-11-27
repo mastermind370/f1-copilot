@@ -52,7 +52,7 @@ retrieval:
   top_k: 5                  # passages given to the LLM
   candidate_k: 30           # depth of each ranked list before fusion
   rrf_k: 60                 # standard Reciprocal Rank Fusion constant
-  min_confidence: 0.80      # top dense cosine score below this -> refuse. Calibrated in Stage 3.
+  min_confidence: 0.81      # top dense cosine score below this -> refuse. Calibrated in Stage 3.
 
 llm:
   provider: none          # ollama | openai | none (none = extractive answers, no LLM)

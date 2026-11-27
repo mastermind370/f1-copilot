@@ -1,16 +1,12 @@
-# CI quality gates for `copilot eval run --check eval/thresholds.yaml`.
-# Starting values are deliberately loose. After your first real run, use
-#   copilot eval run --corpus eval/snapshot/chunks.jsonl --update-thresholds
-# to "ratchet" each gate to (measured - 0.05). From then on, a change that makes
-# retrieval or refusal worse fails CI.
-min:
-  retrieval.overall.recall@5: 0.50
-  retrieval.overall.mrr@10: 0.30
-  retrieval.by_language.en.recall@5: 0.50
-  retrieval.by_language.zh.recall@5: 0.30
-  retrieval.by_language.hi.recall@5: 0.30
-  retrieval.by_language.ko.recall@5: 0.30
-  retrieval.by_language.es.recall@5: 0.30
-  refusal.configured.balanced_accuracy: 0.60
+# CI quality gates, ratcheted to (measured - 0.05) by `copilot eval run --update-thresholds`.
 max:
-  refusal.configured.false_refusal_rate: 0.40
+  refusal.configured.false_refusal_rate: 0.05
+min:
+  refusal.configured.balanced_accuracy: 0.95
+  retrieval.by_language.en.recall@5: 0.87
+  retrieval.by_language.es.recall@5: 0.45
+  retrieval.by_language.hi.recall@5: 0.95
+  retrieval.by_language.ko.recall@5: 0.95
+  retrieval.by_language.zh.recall@5: 0.61
+  retrieval.overall.mrr@10: 0.78
+  retrieval.overall.recall@5: 0.84
