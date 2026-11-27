@@ -64,6 +64,12 @@ class LLMConfig:
 
 
 @dataclass(frozen=True)
+class RulesConfig:
+    dir: Path = Path("rules")
+    max_age_days: int = 180  # rules verified longer ago than this are flagged as stale
+
+
+@dataclass(frozen=True)
 class AppConfig:
     data_dir: Path
     sources: list[Source]
@@ -72,12 +78,18 @@ class AppConfig:
     chunking: ChunkConfig = field(default_factory=ChunkConfig)
     retrieval: RetrievalConfig = field(default_factory=RetrievalConfig)
     llm: LLMConfig = field(default_factory=LLMConfig)
+    rules: RulesConfig = field(default_factory=RulesConfig)
 
     def source(self, name: str) -> Source:
         for s in self.sources:
             if s.name == name:
                 return s
         raise ConfigError(f"unknown source {name!r}")
+
+
+def _resolve(base: Path, p: str | Path) -> Path:
+    p = Path(p)
+    return p if p.is_absolute() else base / p
 
 
 def load_config(path: str | Path) -> AppConfig:
@@ -93,16 +105,19 @@ def load_config(path: str | Path) -> AppConfig:
         if not s.allowed_prefixes:
             raise ConfigError(f"source {s.name!r} has no allowed_prefixes")
 
-    data_dir = Path(raw.get("data_dir", "data"))
-    if not data_dir.is_absolute():
-        data_dir = path.parent / data_dir
+    rules_raw = dict(raw.get("rules", {}))
+    rules = RulesConfig(
+        dir=_resolve(path.parent, rules_raw.get("dir", "rules")),
+        max_age_days=int(rules_raw.get("max_age_days", 180)),
+    )
 
     return AppConfig(
-        data_dir=data_dir,
+        data_dir=_resolve(path.parent, raw.get("data_dir", "data")),
         sources=sources,
         dso_message=str(raw.get("dso_message", "Please contact your school's DSO.")).strip(),
         crawl=CrawlConfig(**raw.get("crawl", {})),
         chunking=ChunkConfig(**raw.get("chunking", {})),
         retrieval=RetrievalConfig(**raw.get("retrieval", {})),
         llm=LLMConfig(**raw.get("llm", {})),
+        rules=rules,
     )

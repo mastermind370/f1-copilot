@@ -1,0 +1,28 @@
+id: opt-unemployment-limit
+version: 1
+title: OPT unemployment limit
+category: opt
+summary: >-
+  You may not accumulate more than 90 days of unemployment during post-completion OPT.
+  An approved STEM extension adds 60 more, for 150 days in total across both periods.
+source:
+  url: https://www.ecfr.gov/current/title-8/chapter-I/subchapter-B/part-214/section-214.2
+  citation: 8 CFR 214.2(f)(10)(ii)(E)
+  verification: secondary
+  last_verified: 2026-11-27
+notes:
+  - Unemployment days are cumulative across the whole OPT period. Your DSO can confirm your count.
+when: {fact: on_opt, eq: true}
+outputs:
+  - kind: limit
+    label: Maximum total unemployment during post-completion OPT
+    when: {fact: on_stem_opt, eq: false, missing_as: false}
+    value: 90
+    unit: days
+  - kind: limit
+    label: Maximum total unemployment across OPT + STEM extension
+    when: {fact: on_stem_opt, eq: true}
+    value: 150
+    unit: days
+changelog:
+  - "v1 (2026-11-27): initial version"

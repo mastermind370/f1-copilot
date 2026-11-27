@@ -1,0 +1,26 @@
+id: opt-post-completion-filing-window
+version: 1
+title: Post-completion OPT filing window
+category: opt
+summary: >-
+  USCIS must receive your Form I-765 for post-completion OPT inside this window. It opens
+  90 days before your program end date and closes 60 days after it. It also closes 30 days
+  after your DSO enters the OPT recommendation in SEVIS, whichever comes first.
+source:
+  url: https://www.uscis.gov/working-in-the-united-states/students-and-exchange-visitors/optional-practical-training-opt-for-f-1-students
+  citation: 8 CFR 214.2(f)(11)
+  verification: secondary
+  last_verified: 2026-11-27
+notes:
+  - The deadline is when USCIS RECEIVES the application, not when you send it.
+  - Many schools need your OPT request weeks before USCIS's deadline. Check your school's internal deadline.
+outputs:
+  - kind: window
+    label: USCIS must receive Form I-765 (post-completion OPT)
+    start: {fact: program_end_date, days: -90}
+    end:
+      min:
+        - {fact: program_end_date, days: 60}
+        - {fact: dso_recommendation_date, days: 30, optional: true}
+changelog:
+  - "v1 (2026-11-27): initial version"

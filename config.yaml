@@ -61,3 +61,7 @@ llm:
   api_key_env: OPENAI_API_KEY   # only used by the openai provider
   temperature: 0.0
   timeout_seconds: 120.0
+
+rules:
+  dir: rules                # versioned YAML rules for the deterministic timeline engine
+  max_age_days: 180         # rules not re-verified within this many days are flagged stale

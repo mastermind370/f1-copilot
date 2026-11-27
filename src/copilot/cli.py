@@ -4,6 +4,8 @@
     copilot import-html FILE --url URL --source NAME
     copilot reindex [--force]            re-chunk stored HTML and refresh embeddings (offline)
     copilot ask "question" [--json] [--debug]
+    copilot timeline --facts FILE [--set k=v] [--as-of DATE] [--json]
+    copilot rules check [--strict]
     copilot stats
 """
 
@@ -117,6 +119,122 @@ def cmd_ask(cfg: AppConfig, args: argparse.Namespace) -> int:
     return 0
 
 
+def _load_facts(args: argparse.Namespace):  # type: ignore[no-untyped-def]
+    import yaml
+
+    from copilot.timeline.facts import parse_facts
+
+    raw: dict[str, object] = {}
+    if args.facts:
+        loaded = yaml.safe_load(Path(args.facts).read_text()) or {}
+        if not isinstance(loaded, dict):
+            raise ValueError(f"{args.facts} must contain key: value pairs")
+        raw.update(loaded)
+    for item in args.set or []:
+        if "=" not in item:
+            raise ValueError(f"--set expects key=value, got {item!r}")
+        key, value = item.split("=", 1)
+        raw[key.strip()] = value.strip()
+    return parse_facts(raw)
+
+
+def _fmt_item(item) -> list[str]:  # type: ignore[no-untyped-def]
+    if item.kind == "window":
+        when = f"{item.start} -> {item.end}"
+    elif item.kind in {"deadline", "earliest"}:
+        when = str(item.date)
+    elif item.kind == "limit":
+        when = f"{item.value} {item.unit}"
+    else:
+        when = ""
+    rel = ""
+    if item.days_until is not None and item.status == "upcoming":
+        rel = f"  (in {item.days_until} days)"
+    elif item.status == "active":
+        rel = "  (OPEN NOW)" if item.kind == "window" else ""
+    lines = [f"  [{item.status.upper():<8}] {item.label}: {when}{rel}"]
+    if item.message:
+        lines.append(textwrap.fill(item.message, 88, initial_indent="      ",
+                                   subsequent_indent="      "))
+    lines += [f"      how: {step}" for step in item.explanation]
+    cite = f" ({item.citation})" if item.citation else ""
+    lines.append(f"      rule: {item.rule_id} v{item.rule_version} | source{cite}: {item.source_url}")
+    flag = "" if item.verification == "primary" else "  <- verified via secondary sources"
+    lines.append(f"      last verified: {item.last_verified}{flag}")
+    for note in item.notes:
+        lines.append(textwrap.fill(f"note: {note}", 88, initial_indent="      ",
+                                   subsequent_indent="        "))
+    return lines
+
+
+def cmd_timeline(cfg: AppConfig, args: argparse.Namespace) -> int:
+    from datetime import date
+
+    from copilot.timeline import RuleValidationError, evaluate, load_rules
+    from copilot.timeline.facts import FactError
+
+    try:
+        rules = load_rules(cfg.rules.dir)
+        facts = _load_facts(args)
+        as_of = date.fromisoformat(args.as_of) if args.as_of else date.today()
+    except (RuleValidationError, FactError, ValueError, OSError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+
+    tl = evaluate(rules, facts, as_of, cfg.rules.max_age_days)
+
+    if args.json:
+        print(json.dumps(asdict(tl), indent=2, default=str))
+        return 0
+
+    print(f"\nYour F-1 timeline as of {as_of}\n")
+    groups = [("Open now and upcoming", ("active", "upcoming")), ("Limits and notices", ("info",)),
+              ("Already passed", ("past",))]
+    for title, statuses in groups:
+        items = [i for i in tl.items if i.status in statuses]
+        if items:
+            print(title)
+            for item in items:
+                print("\n".join(_fmt_item(item)))
+                print()
+    if tl.needs_info:
+        print("Add these facts to compute more of your timeline:")
+        for n in tl.needs_info:
+            print(f"  - {n.title}: needs {', '.join(n.missing)}")
+        print()
+    if tl.stale_rules:
+        print(f"WARNING: rules not re-verified in {cfg.rules.max_age_days} days: "
+              f"{', '.join(tl.stale_rules)}\n")
+    print("Dates are computed by fixed rules, not AI. " + DISCLAIMER)
+    return 0
+
+
+def cmd_rules_check(cfg: AppConfig, args: argparse.Namespace) -> int:
+    from datetime import date
+
+    from copilot.timeline import RuleValidationError, load_rules
+
+    try:
+        rules = load_rules(cfg.rules.dir)
+    except RuleValidationError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    today = date.today()
+    stale = 0
+    print(f"{len(rules)} rules valid in {cfg.rules.dir}\n")
+    for r in rules:
+        age = (today - r.source.last_verified).days
+        flags = []
+        if age > cfg.rules.max_age_days:
+            flags.append("STALE")
+            stale += 1
+        if r.source.verification != "primary":
+            flags.append("secondary-verified")
+        print(f"  {r.id:<36} v{r.version}  verified {r.source.last_verified} ({age}d ago)"
+              + (f"  [{', '.join(flags)}]" if flags else ""))
+    return 1 if (stale and args.strict) else 0
+
+
 def cmd_stats(cfg: AppConfig, args: argparse.Namespace) -> int:
     with Store(cfg.data_dir) as store:
         print(json.dumps(store.stats(), indent=2))
@@ -150,6 +268,19 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--json", action="store_true")
     s.add_argument("--debug", action="store_true", help="show sentences dropped for missing citations")
     s.set_defaults(func=cmd_ask)
+
+    s = sub.add_parser("timeline", help="compute your personal deadlines (deterministic rules)")
+    s.add_argument("--facts", help="YAML file of your facts (see examples/facts.example.yaml)")
+    s.add_argument("--set", action="append", metavar="KEY=VALUE", help="set or override one fact")
+    s.add_argument("--as-of", help="compute as if today were this date (YYYY-MM-DD)")
+    s.add_argument("--json", action="store_true")
+    s.set_defaults(func=cmd_timeline)
+
+    s = sub.add_parser("rules", help="rule maintenance")
+    rsub = s.add_subparsers(dest="rules_command", required=True)
+    r = rsub.add_parser("check", help="validate all rules and report verification age")
+    r.add_argument("--strict", action="store_true", help="exit non-zero if any rule is stale")
+    r.set_defaults(func=cmd_rules_check)
 
     s = sub.add_parser("stats", help="show index statistics")
     s.set_defaults(func=cmd_stats)

@@ -1,0 +1,21 @@
+# Example student facts for `copilot timeline --facts examples/facts.example.yaml`.
+# Every field is optional. Leave out what you don't know, and the timeline will tell you
+# which facts each rule still needs. Dates are YYYY-MM-DD.
+# This file stays on your machine. Copy it to my-facts.yaml (git-ignored) for your real data.
+
+degree_level: bachelor
+program_start_date: 2023-09-01
+program_end_date: 2027-05-15
+is_initial_student: false
+completed_one_academic_year: true
+full_time_cpt_months: 0
+
+on_opt: false
+stem_degree: true
+# dso_recommendation_date: 2027-03-01
+
+last_travel_signature_date: 2026-08-20
+# address_change_date: 2026-11-20
+
+tax_year: 2026
+had_us_income: false

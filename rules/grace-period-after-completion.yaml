@@ -1,0 +1,29 @@
+id: grace-period-after-completion
+version: 1
+title: Grace period after completing your program or OPT
+category: status
+summary: >-
+  After you complete your program, or your authorized practical training, you have 60 days
+  to leave the US, transfer to another school, or change status.
+source:
+  url: https://studyinthestates.dhs.gov/answer/what-do-i-do-if-my-f-1-visa-has-expired
+  citation: 8 CFR 214.2(f)(5)(iv)
+  verification: primary
+  last_verified: 2026-11-27
+notes:
+  - >-
+    A DHS final rule published July 17, 2026 would have cut this grace period to 30 days.
+    A federal court vacated that rule on November 16, 2026, so the 60-day grace period
+    still applies. DHS could appeal. Confirm with your DSO.
+  - If you withdraw from classes, different (shorter or no) grace periods apply. Talk to your DSO first.
+outputs:
+  - kind: deadline
+    label: Last day of grace period after program completion
+    when: {fact: on_opt, eq: false}
+    date: {fact: program_end_date, days: 60}
+  - kind: deadline
+    label: Last day of grace period after OPT ends
+    when: {fact: on_opt, eq: true}
+    date: {fact: opt_ead_end_date, days: 60}
+changelog:
+  - "v1 (2026-11-27): initial version; added note on the vacated fixed-admission rule"

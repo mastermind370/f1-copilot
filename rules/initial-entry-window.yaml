@@ -1,0 +1,18 @@
+id: initial-entry-window
+version: 1
+title: Earliest date to enter the US for a new program
+category: travel
+summary: Initial F-1 students may enter the US no more than 30 days before their program start date.
+source:
+  url: https://studyinthestates.dhs.gov/answer/what-do-i-do-if-my-f-1-visa-has-expired
+  verification: primary
+  last_verified: 2026-11-27
+notes:
+  - Contact your DSO as soon as you arrive.
+when: {fact: is_initial_student, eq: true}
+outputs:
+  - kind: earliest
+    label: Earliest date you may enter the US
+    date: {fact: program_start_date, days: -30}
+changelog:
+  - "v1 (2026-11-27): initial version"

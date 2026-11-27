@@ -1,0 +1,19 @@
+id: address-change-reporting
+version: 1
+title: Report a change of address
+category: reporting
+summary: You must report a change of address to your DSO within 10 days of the change.
+source:
+  url: https://studyinthestates.dhs.gov/2014/07/when-report-changes-your-dso
+  citation: 8 CFR 214.2(f)(17)
+  verification: primary
+  last_verified: 2026-11-27
+notes:
+  - Students on OPT report address changes through the SEVP Portal or to their DSO.
+when: {fact: address_change_date, is_set: true}
+outputs:
+  - kind: deadline
+    label: Report new address to your DSO by
+    date: {fact: address_change_date, days: 10}
+changelog:
+  - "v1 (2026-11-27): initial version"

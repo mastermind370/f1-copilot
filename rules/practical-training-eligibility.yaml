@@ -1,0 +1,32 @@
+id: practical-training-eligibility
+version: 1
+title: CPT and OPT eligibility checks
+category: eligibility
+summary: >-
+  CPT and OPT generally require one full academic year of lawful full-time enrollment first.
+  Twelve months or more of full-time CPT makes you ineligible for OPT at that degree level.
+source:
+  url: https://www.ecfr.gov/current/title-8/chapter-I/subchapter-B/part-214/section-214.2
+  citation: 8 CFR 214.2(f)(10)
+  verification: secondary
+  last_verified: 2026-11-27
+notes:
+  - >-
+    SEVP guidance from August 2026 that narrowed which training counts as CPT was stayed by a
+    federal court on November 17, 2026. CPT rules are actively changing. Ask your DSO.
+  - Some graduate programs that require training in the first year are an exception to the one-year rule.
+outputs:
+  - kind: notice
+    label: One academic year requirement not yet met
+    when: {fact: completed_one_academic_year, eq: false}
+    message: >-
+      You generally need one full academic year of full-time enrollment before CPT or
+      pre-completion OPT. Ask your DSO whether your program has an exception.
+  - kind: notice
+    label: OPT eligibility affected by full-time CPT
+    when: {fact: full_time_cpt_months, gte: 12}
+    message: >-
+      Twelve months or more of full-time CPT means you are not eligible for OPT at this
+      degree level. Part-time CPT does not count toward this limit.
+changelog:
+  - "v1 (2026-11-27): initial version"

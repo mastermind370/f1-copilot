@@ -8,3 +8,4 @@ __pycache__/
 data/
 .env
 .DS_Store
+my-facts.yaml

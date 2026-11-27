@@ -1,0 +1,31 @@
+id: stem-opt-extension-filing-window
+version: 1
+title: STEM OPT extension filing window
+category: opt
+summary: >-
+  USCIS must receive your STEM OPT extension application no earlier than 90 days before
+  your current OPT EAD expires, before it expires, and within 60 days of your DSO's
+  STEM OPT recommendation.
+source:
+  url: https://www.uscis.gov/working-in-the-united-states/students-and-exchange-visitors/optional-practical-training-extension-for-stem-students-stem-opt
+  citation: 8 CFR 214.2(f)(10)-(11)
+  verification: secondary
+  last_verified: 2026-11-27
+notes:
+  - You cannot apply for the STEM extension during the grace period after your OPT ends.
+  - Requires a STEM-designated degree and an E-Verify employer, plus a Form I-983 training plan.
+when:
+  all:
+    - {fact: on_opt, eq: true}
+    - {fact: stem_degree, eq: true}
+    - {fact: on_stem_opt, eq: false, missing_as: false}
+outputs:
+  - kind: window
+    label: USCIS must receive STEM OPT extension application
+    start: {fact: opt_ead_end_date, days: -90}
+    end:
+      min:
+        - {fact: opt_ead_end_date}
+        - {fact: stem_dso_recommendation_date, days: 60, optional: true}
+changelog:
+  - "v1 (2026-11-27): initial version"

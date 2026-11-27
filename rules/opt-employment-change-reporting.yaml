@@ -1,0 +1,22 @@
+id: opt-employment-change-reporting
+version: 1
+title: Report employment changes while on OPT
+category: reporting
+summary: While on OPT, report changes to your employer information within 10 days of the change.
+source:
+  url: https://studyinthestates.dhs.gov/2018/05/maintain-your-f-1-status-during-summer-vacation
+  citation: 8 CFR 214.2(f)(12)
+  verification: primary
+  last_verified: 2026-11-27
+notes:
+  - On STEM OPT, material changes to your Form I-983 training plan must also be reported.
+when:
+  all:
+    - {fact: employment_change_date, is_set: true}
+    - {fact: on_opt, eq: true}
+outputs:
+  - kind: deadline
+    label: Report employment change by
+    date: {fact: employment_change_date, days: 10}
+changelog:
+  - "v1 (2026-11-27): initial version"
