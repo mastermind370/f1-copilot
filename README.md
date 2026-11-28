@@ -114,6 +114,24 @@ Why this matters: in July 2026 DHS published a rule cutting the F-1 grace period
 - **Document vault checklist.** Passport, visa, I-20 end date, EAD end date and travel signature (12 months, or 6 on OPT, with month-end clamping). Each gets a status and optional reminders 90, 30 and 7 days ahead. An expired visa is shown neutrally, because it only matters for re-entry. Only dates are stored, never document numbers or scans.
 - **I-94 helper and tax season mode.** Step-by-step for the official CBP site, what to check, and a note on the vacated 2026 fixed-admission-period rule. From February through April, the hub and F-1 pages highlight Form 8843, Form 1040-NR, the five-year exempt-individual rule and tax treaties, linking only to IRS pages.
 
+### Form 8843 helper
+- **Every F-1 student files Form 8843 each year**, even with no income. The helper asks a few questions and produces a line-by-line answer sheet for the official IRS form, plus where and when to mail it.
+- **Days are counted for you** from your arrivals and departures (any part of a day counts, overlapping trips aren't double counted, leap years handled). It checks the five-calendar-year exempt-student limit and warns when you may be a resident for tax purposes or when lines 12 or 13 need extra steps.
+- **Deadlines are computed**, not hard-coded: June 15 of the next year when filing alone, or April 15 with Form 1040-NR, moved to Monday when they fall on a weekend.
+- **Privacy:** answers stay in the browser, and it never asks for a passport number. "Print my answers" prints only the answer sheet. Logic in `web/lib/form8843.ts`, covered by 10 tests.
+
+### Visa sponsor lookup
+- **Search any company** to see new H-1B approvals and denials by fiscal year, approval rate, extensions, and every job title it filed with the median and range of offered salaries, plus where the jobs are. Links to the official E-Verify search, since STEM OPT requires an E-Verify employer.
+- **Built from official public data:** the USCIS H-1B Employer Data Hub and Department of Labor LCA disclosure files. `copilot employers import` reads CSV or Excel, recognizes each source by its headers (both the older and newer USCIS column layouts, UTF-16 tab-separated exports, older DOL `_1` worksite columns), keeps only certified full-time H-1B filings, converts hourly or monthly wages to annual, and drops obvious data-entry errors. Re-importing a file replaces its rows instead of duplicating them.
+- **Employer names are normalized** so "Google LLC" and "GOOGLE, L.L.C." are one employer across both datasets, and searches rank exact matches first, then recent new-hire approvals.
+- Stored in SQLite (`data/employers.db`), queried read-only by the API. Logic in `src/copilot/employers.py`, covered by 8 tests with sample files in each official format.
+
+### Live restaurant and grocery listings
+- **Every Dining and Groceries category opens into a list** of nearby places: name, distance from campus, cuisine, diet tags (vegetarian, vegan, halal, kosher), opening hours, address, website, and an "Open in Google Maps" link.
+- **Free by default, no key or account.** Listings come from OpenStreetMap (`src/copilot/osm.py`). Nominatim turns the campus city into coordinates once (cached forever, requests spaced 1 second apart). One Overpass query per city fetches every named restaurant, café and food shop within 6 km, cached on disk for 7 days, and the server sorts them into the 29 categories itself. That's at most about 19 queries a week for all campuses, well inside the public servers' fair-use policies, with a daily cap as a backstop and stale-cache fallback if a server is down. Every request identifies the app with a User-Agent, and lists credit "© OpenStreetMap contributors".
+- **Category rules are unit-tested** against sample map data (cuisine tags, shop names like "Patel Brothers" or "H Mart", diet tags, and closing times after 11 pm for late-night food). When a place is mapped twice (a point and a building), the more complete record wins.
+- **Optional Google Places.** Set `GOOGLE_PLACES_API_KEY` and the same dropdowns show photos, star ratings and "what it's known for" instead. This requires a Google billing account, so it's off unless you choose it. The key stays on the server, only allowlisted categories can be searched, and a daily budget keeps usage inside Google's free monthly amount.
+
 ### Community, money and phone
 - **Verified group chats.** `web/data/communities.json` lists groups per school with platform, owner and the date a maintainer last checked them. It ships empty on purpose: links are added only after checking a group with its organizers. `npm test` rejects any link that isn't https on an allowlisted invite domain (GroupMe, WhatsApp, Discord, Telegram, Slack), including look-alike domains, credentials in URLs and non-invite paths. WeChat groups have no web links, so they use a QR image with a note that codes expire after 7 days. Every group has a Report link, and students can submit a group through a prefilled GitHub issue. A safety note warns about fee and "deposit" scams.
 - **Student organizations, buddy programs and places of worship** link to site-scoped searches on the school's own domain and map searches near campus, so nothing is invented or goes stale.
@@ -139,7 +157,7 @@ Why this matters: in July 2026 DHS published a rule cutting the F-1 grace period
 - **Render:** New → Blueprint → this repo (`render.yaml` selects the 2 GB Standard plan; the 512 MB free plan runs out of memory).
 - **Fly.io:** `fly launch --no-deploy`, then `fly deploy` (`fly.toml` asks for 2 GB and stops the machine when idle).
 
-On either host, set `COPILOT_ALLOWED_ORIGINS` to your Vercel URL. Rebuild the image to refresh the corpus; the weekly recheck Action tells you when sources changed.
+On either host, set `COPILOT_ALLOWED_ORIGINS` to your Vercel URL, and optionally `GOOGLE_PLACES_API_KEY` for live listings. Rebuild the image to refresh the corpus; the weekly recheck Action tells you when sources changed.
 
 ## Rule review
 
@@ -169,6 +187,14 @@ npm install
 npm run dev
 ```
 Open http://localhost:3000. Every visit opens on the welcome screen; returning students get a one-tap Continue to their school's hub.
+
+### Load the visa sponsor data
+Download one or more files, then import them (each takes a few minutes):
+- USCIS H-1B Employer Data Hub: https://www.uscis.gov/tools/reports-and-studies/h-1b-employer-data-hub → download a fiscal year as CSV
+- DOL LCA disclosure data: https://www.dol.gov/agencies/eta/foreign-labor/performance → "LCA Programs (H-1B, H-1B1, E-3)" Excel file
+```bash
+copilot employers import ~/Downloads/Employer*.csv ~/Downloads/LCA_Disclosure_Data_FY*.xlsx
+```
 
 ### CLI
 ```bash
@@ -207,6 +233,8 @@ examples/              example facts; macOS launchd schedule
 src/copilot/
   crawler.py parsing.py chunker.py store.py indexing.py   ingestion
   bm25.py embeddings.py retrieval.py llm.py answer.py      grounded Q&A
+  osm.py places.py     restaurant and grocery listings (OpenStreetMap; optional Google Places)
+  employers.py         H-1B sponsor data import and search
   timeline/            facts, dates, schema, engine        deterministic rules engine
   evaluation/          dataset, metrics, faithfulness, runner, report
   changes.py           recheck + diff + stale flags

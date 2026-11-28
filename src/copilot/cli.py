@@ -475,6 +475,47 @@ def cmd_serve(cfg: AppConfig, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_places_check(cfg: AppConfig, args: argparse.Namespace) -> int:
+    """Test the free OpenStreetMap listings end to end and print what happened."""
+    from copilot.osm import OsmPlaces
+    from copilot.places import PlacesError
+
+    osm = OsmPlaces(cfg.data_dir / "osm_cache.json")
+    print(f"Looking up {args.category} near {args.near} (the first lookup for a city can take up to a minute)...")
+    try:
+        places = osm.search(args.category, args.near)
+    except PlacesError as exc:
+        print(f"FAILED ({exc.code}): {exc}", file=sys.stderr)
+        return 1
+    print(f"OK: {len(places)} result(s)")
+    for p in places:
+        print(f"  {p['name']}  ({p['distanceKm']} km)  {', '.join(p['cuisine'])}")
+    return 0
+
+
+def cmd_employers_import(cfg: AppConfig, args: argparse.Namespace) -> int:
+    """Import USCIS H-1B Employer Data Hub and DOL LCA disclosure files into data/employers.db."""
+    from copilot.employers import connect, import_file
+
+    con = connect(cfg.data_dir / "employers.db")
+    failed = 0
+    for name in args.files:
+        path = Path(name).expanduser()
+        if not path.exists():
+            print(f"{name}: file not found", file=sys.stderr)
+            failed += 1
+            continue
+        print(f"Reading {path.name} (large Excel files can take a few minutes)...")
+        try:
+            import_file(con, path)
+        except ValueError as exc:
+            print(f"skipped {exc}", file=sys.stderr)
+            failed += 1
+    n = con.execute("SELECT COUNT(*) FROM employers").fetchone()[0]
+    print(f"Employer database now has {n:,} employers: {cfg.data_dir / 'employers.db'}")
+    return 1 if failed else 0
+
+
 def cmd_stats(cfg: AppConfig, args: argparse.Namespace) -> int:
     with Store(cfg.data_dir) as store:
         print(json.dumps(store.stats(), indent=2))
@@ -567,6 +608,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("stats", help="show index statistics")
     s.set_defaults(func=cmd_stats)
+
+    s = sub.add_parser("employers", help="visa-sponsor employer data")
+    esub = s.add_subparsers(dest="employers_cmd", required=True)
+    e = esub.add_parser("import", help="import USCIS H-1B Data Hub and/or DOL LCA files (.csv or .xlsx)")
+    e.add_argument("files", nargs="+")
+    e.set_defaults(func=cmd_employers_import)
+
+    s = sub.add_parser("places-check", help="test the OpenStreetMap restaurant and grocery listings")
+    s.add_argument("--near", default="New Brunswick, NJ")
+    s.add_argument("--category", default="dine.indian")
+    s.set_defaults(func=cmd_places_check)
     return p
 
 

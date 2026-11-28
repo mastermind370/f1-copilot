@@ -1,7 +1,8 @@
 "use client";
 
 import { usePrefs } from "@/components/Providers";
-import { LinkCard, NeedSchool, PageTitle } from "@/components/Resource";
+import PlaceDropdown from "@/components/PlaceDropdown";
+import { NeedSchool, PageTitle } from "@/components/Resource";
 import type { MessageKey } from "@/lib/i18n";
 import { mapsSearch } from "@/lib/links";
 
@@ -25,15 +26,14 @@ export default function GroceriesPage() {
   const { t, school } = usePrefs();
   return (
     <div className="page">
-      <PageTitle title={school ? t("groc.title", { city: school.city }) : t("nav.groceries")} intro={t("groc.intro")} />
+      <PageTitle title={school ? t("groc.title", { city: school.city }) : t("nav.groceries")} intro={t("places.tapHint")} />
       {!school ? <NeedSchool /> : (
         <>
-          <div className="link-grid">
+          <div className="link-grid place-grid">
             {STORES.map((s) => (
-              <LinkCard key={s.key} href={mapsSearch(s.query, school.city)} icon={s.emoji} label={t(s.key)} />
+              <PlaceDropdown key={s.key} category={s.key} emoji={s.emoji} mapsHref={mapsSearch(s.query, school.city)} />
             ))}
           </div>
-          <p className="muted small">{t("res.mapsNote", { city: school.city })}</p>
         </>
       )}
     </div>

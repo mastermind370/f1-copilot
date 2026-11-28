@@ -569,3 +569,110 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 /* Fixed warm colors so the banner reads as a notice under every school theme. */
 .tax-banner { background: #fff4dc; border-color: #e2b24c; }
 .f1-feature-icon { color: #fff; }
+
+/* ---------- live place listings ---------- */
+.place-grid { align-items: start; }
+.place-dd.is-open { grid-column: 1 / -1; }
+.place-trigger { width: 100%; font: inherit; text-align: left; cursor: pointer; }
+.place-dd.is-open .place-trigger { border-color: var(--primary); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.chev { color: var(--muted); transition: transform 0.2s; font-size: 1.1rem; }
+.place-dd.is-open .chev { transform: rotate(180deg); color: var(--primary); }
+.place-panel {
+  background: var(--surface); border: 1px solid var(--primary); border-top: 0; padding: 0.4rem 1rem 1rem;
+  border-radius: 0 0 var(--radius) var(--radius); box-shadow: var(--shadow-sm);
+}
+.place-list { list-style: none; margin: 0; padding: 0; }
+.place { display: flex; gap: 1rem; padding: 0.9rem 0; border-bottom: 1px solid var(--line); }
+.place-photo { flex: none; width: 96px; height: 96px; border-radius: 14px; overflow: hidden; background: var(--surface-2); }
+.place-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.place-photo-fallback { display: grid; place-items: center; height: 100%; font-size: 2rem; }
+.place-body { flex: 1; min-width: 0; }
+.place-name { margin: 0 0 0.2rem; font-size: 1.02rem; }
+.place-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.7rem; font-size: 0.88rem; }
+.place-rating { display: inline-flex; align-items: center; gap: 0.3rem; }
+.stars { display: inline-flex; letter-spacing: -1px; font-size: 0.95rem; }
+.star { color: #d7d3c8; }
+.star.full { color: #e7a300; }
+.star.half { background: linear-gradient(90deg, #e7a300 50%, #d7d3c8 50%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.open-badge { font-size: 0.75rem; font-weight: 700; padding: 0.1rem 0.5rem; border-radius: 999px; }
+.open-badge.open { background: var(--ok-soft); color: var(--ok); }
+.open-badge.closed { background: var(--surface-2); color: var(--muted); }
+.place-summary { margin: 0.35rem 0 0; font-size: 0.92rem; color: var(--text-2); }
+.place-address { display: flex; align-items: center; gap: 0.25rem; margin: 0.3rem 0 0; }
+.place-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.4rem 1rem; margin-top: 0.45rem; }
+.place-maps { display: inline-flex; align-items: center; gap: 0.25rem; font-weight: 700; font-size: 0.88rem; }
+.photo-credit { font-size: 0.75rem; }
+.photo-credit a { color: inherit; }
+.place-panel-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem; padding-top: 0.85rem; }
+.place.skeleton .place-photo, .place.skeleton .place-body span {
+  background: linear-gradient(90deg, var(--surface-2), #ecebe6, var(--surface-2)); background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+}
+.place.skeleton .place-body span { display: block; height: 0.9rem; border-radius: 6px; margin: 0.4rem 0; width: 60%; }
+.place.skeleton .place-body span + span { width: 85%; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+@media (max-width: 520px) { .place-photo { width: 72px; height: 72px; } }
+.place-panel > p { margin: 0.6rem 0 0; }
+.place-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; }
+.chip { font-size: 0.75rem; font-weight: 600; padding: 0.12rem 0.55rem; border-radius: 999px; background: var(--surface-2); color: var(--text-2); border: 1px solid var(--line); }
+.chip.diet { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+.osm-note { margin: 0.6rem 0 0.2rem; }
+.place-photo.empty { width: 52px; height: 52px; border-radius: 12px; }
+.place-photo.empty .place-photo-fallback { font-size: 1.5rem; }
+
+/* ---------- Form 8843 helper ---------- */
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0 1rem; }
+.form8843 select, .form8843 textarea, .emp-search input { font: inherit; padding: 0.55rem 0.7rem; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); }
+.form8843 textarea { resize: vertical; }
+.days-summary { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; margin: 1rem 0 0; padding: 0.75rem 1rem; background: var(--primary-soft); border-radius: var(--radius-sm); }
+.days-summary strong { font-size: 1.25rem; color: var(--primary); }
+.visa-years { border: 0; padding: 0; margin: 1rem 0; }
+.visa-years legend { font-weight: 700; font-size: 0.9rem; color: var(--text-2); margin-bottom: 0.4rem; }
+.visa-year-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0 0.75rem; }
+.sheet h2 { margin-top: 0; }
+.sheet-table { width: 100%; border-collapse: collapse; margin: 0.75rem 0 1rem; font-size: 0.92rem; }
+.sheet-table th, .sheet-table td { text-align: left; vertical-align: top; padding: 0.6rem 0.5rem; border-bottom: 1px solid var(--line); }
+.sheet-table thead th { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.sheet-table tbody th { width: 3.5rem; font-weight: 800; color: var(--primary); }
+.sheet-table td:nth-child(2) { color: var(--text-2); width: 40%; }
+.sheet-group td { background: var(--surface-2); font-weight: 800; font-size: 0.85rem; }
+.sheet-value { display: block; font-size: 1rem; }
+.sheet-note { display: block; color: var(--muted); font-size: 0.8rem; margin-top: 0.2rem; }
+.mail-card { border: 1px solid var(--line); border-left: 4px solid var(--primary); border-radius: var(--radius-sm); padding: 0.9rem 1.1rem; margin: 1rem 0; }
+.mail-card h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+.mail-card address { font-style: normal; font-weight: 700; margin: 0.5rem 0; line-height: 1.5; }
+.mail-card ul { margin: 0.5rem 0 0; padding-left: 1.2rem; }
+.sheet-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 0.75rem; }
+.helper-cta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; border-left: 4px solid var(--primary); }
+.helper-cta h2 { margin: 0 0 0.3rem; }
+.helper-cta p { margin: 0; max-width: 60ch; }
+@media print {
+  .no-print, header, .tab-bar, .subnav, footer, .skip-link, .change-banner, .tax-banner { display: none !important; }
+  body { background: #fff; }
+  .sheet { box-shadow: none; border: 0; padding: 0; }
+  .sheet-group td { background: #eee !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* ---------- employer sponsor lookup ---------- */
+.emp-search { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0 1rem; }
+.emp-search .grow { flex: 1 1 260px; }
+.emp-search .btn { margin-bottom: 0.8rem; }
+.emp-list { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: 0.75rem; }
+.emp-card { padding: 0; overflow: hidden; }
+.emp-card.is-open { border-color: var(--primary); }
+.emp-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; width: 100%; padding: 1rem 1.1rem; background: none; border: 0; font: inherit; text-align: left; cursor: pointer; color: var(--text); }
+.emp-name { display: flex; flex-direction: column; flex: 1 1 220px; min-width: 0; }
+.emp-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.emp-card.is-open .chev { transform: rotate(180deg); color: var(--primary); }
+.emp-detail { padding: 0 1.1rem 1.1rem; border-top: 1px solid var(--line); }
+.emp-detail h4 { margin: 1.1rem 0 0.4rem; }
+.emp-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
+.emp-stats div { background: var(--surface-2); border-radius: var(--radius-sm); padding: 0.75rem 0.9rem; display: flex; flex-direction: column; }
+.emp-stats strong { font-size: 1.4rem; color: var(--primary); }
+.emp-stats span { font-size: 0.82rem; color: var(--muted); }
+.table-scroll { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.data-table th, .data-table td { padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+.data-table th:first-child, .data-table td:first-child { text-align: left; white-space: normal; }
+.data-table thead th { font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.emp-links { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }

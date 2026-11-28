@@ -9,3 +9,5 @@ services:
     envVars:
       - key: COPILOT_ALLOWED_ORIGINS
         sync: false
+      - key: GOOGLE_PLACES_API_KEY     # optional: live restaurant and grocery listings
+        sync: false

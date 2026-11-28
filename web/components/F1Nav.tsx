@@ -13,6 +13,8 @@ const ITEMS: { href: string; key: MessageKey }[] = [
   { href: "/f1/opt-days", key: "f1nav.optDays" },
   { href: "/f1/i94", key: "f1nav.i94" },
   { href: "/f1/taxes", key: "f1nav.taxes" },
+  { href: "/f1/form-8843", key: "f1nav.form8843" },
+  { href: "/f1/employers", key: "f1nav.employers" },
   { href: "/f1/sources", key: "nav.sources" },
 ];
 

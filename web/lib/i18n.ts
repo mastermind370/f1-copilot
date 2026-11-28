@@ -4,6 +4,7 @@
 
 import { enHub, hiHub, zhHub } from "./messages-hub";
 import { bn, es, ko, vi } from "./messages-more";
+import { enJobs, hiJobs, zhJobs } from "./messages-jobs";
 import { enTools, hiTools, zhTools } from "./messages-tools";
 
 export type Lang = "en" | "zh" | "hi" | "ko" | "vi" | "es" | "bn";
@@ -138,7 +139,7 @@ const enBase = {
   "degree.other": "Other",
 };
 
-const en = { ...enBase, ...enHub, ...enTools };
+const en = { ...enBase, ...enHub, ...enTools, ...enJobs };
 export type MessageKey = keyof typeof en;
 type BaseKey = keyof typeof enBase;
 
@@ -370,8 +371,8 @@ const hiBase: Record<BaseKey, string> = {
 
 const MESSAGES: Record<Lang, Partial<Record<MessageKey, string>>> = {
   en,
-  zh: { ...zhBase, ...zhHub, ...zhTools },
-  hi: { ...hiBase, ...hiHub, ...hiTools },
+  zh: { ...zhBase, ...zhHub, ...zhTools, ...zhJobs },
+  hi: { ...hiBase, ...hiHub, ...hiTools, ...hiJobs },
   ko, vi, es, bn,
 };
 

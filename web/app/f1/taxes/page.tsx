@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePrefs } from "@/components/Providers";
 import { PageTitle } from "@/components/Resource";
 import TaxBanner from "@/components/TaxBanner";
@@ -21,6 +22,13 @@ export default function TaxesPage() {
     <div className="page tool-page">
       <PageTitle title={t("tax.title")} intro={t("tax.intro")} />
       <TaxBanner />
+      <section className="card helper-cta">
+        <div>
+          <h2>{t("tax.helperTitle")}</h2>
+          <p>{t("tax.helperBody")}</p>
+        </div>
+        <Link className="btn" href="/f1/form-8843">{t("tax.helperCta")}</Link>
+      </section>
       <div className="tax-grid">
         {cards.map((n) => (
           <section key={n} className="card">

@@ -31,6 +31,15 @@ export const ko: Partial = {
   "ask.noAnswerBody": "이 도구가 색인한 공식 출처에는 이 질문에 대한 내용이 없어 추측하지 않습니다.",
   "error.api": "Copilot API에 연결할 수 없습니다. `copilot serve`로 시작하세요.", "error.generic": "문제가 발생했습니다.",
   "a11y.skip": "본문으로 건너뛰기", "lang.label": "언어", "lang.partial": "이 언어에서는 일부 페이지가 아직 영어입니다.",
+  "places.openMaps": "Google 지도에서 열기",
+  "places.seeAll": "Google 지도에서 모두 보기",
+  "places.open": "영업 중",
+  "places.closed": "영업 종료",
+  "places.tapHint": "카테고리를 눌러 캠퍼스 근처 장소를 확인하세요.",
+  "places.away": "{d} 거리",
+  "places.website": "웹사이트",
+  "f1nav.form8843": "Form 8843",
+  "f1nav.employers": "비자 스폰서",
 };
 
 export const vi: Partial = {
@@ -60,6 +69,15 @@ export const vi: Partial = {
   "ask.noAnswerBody": "Các nguồn chính thức mà công cụ này lập chỉ mục không đề cập câu hỏi này, nên công cụ sẽ không đoán.",
   "error.api": "Không kết nối được Copilot API. Hãy khởi động bằng `copilot serve`.", "error.generic": "Đã xảy ra lỗi.",
   "a11y.skip": "Chuyển đến nội dung", "lang.label": "Ngôn ngữ", "lang.partial": "Một số trang vẫn hiển thị bằng tiếng Anh ở ngôn ngữ này.",
+  "places.openMaps": "Mở trong Google Maps",
+  "places.seeAll": "Xem tất cả trên Google Maps",
+  "places.open": "Đang mở cửa",
+  "places.closed": "Đã đóng cửa",
+  "places.tapHint": "Chạm vào một danh mục để xem các địa điểm gần trường.",
+  "places.away": "cách {d}",
+  "places.website": "Trang web",
+  "f1nav.form8843": "Mẫu 8843",
+  "f1nav.employers": "Nhà tài trợ visa",
 };
 
 export const es: Partial = {
@@ -89,6 +107,15 @@ export const es: Partial = {
   "ask.noAnswerBody": "Las fuentes oficiales que indexa esta herramienta no cubren esta pregunta, así que no va a adivinar.",
   "error.api": "No se puede conectar con la API de Copilot. Iníciala con `copilot serve`.", "error.generic": "Algo salió mal.",
   "a11y.skip": "Saltar al contenido", "lang.label": "Idioma", "lang.partial": "Algunas páginas siguen en inglés en este idioma.",
+  "places.openMaps": "Abrir en Google Maps",
+  "places.seeAll": "Ver todo en Google Maps",
+  "places.open": "Abierto ahora",
+  "places.closed": "Cerrado ahora",
+  "places.tapHint": "Toca una categoría para ver lugares cerca del campus.",
+  "places.away": "a {d}",
+  "places.website": "Sitio web",
+  "f1nav.form8843": "Formulario 8843",
+  "f1nav.employers": "Patrocinadores",
 };
 
 export const bn: Partial = {
@@ -118,4 +145,13 @@ export const bn: Partial = {
   "ask.noAnswerBody": "এই টুল যে সরকারি উৎসগুলো সূচিবদ্ধ করেছে সেগুলোতে এই প্রশ্নের উত্তর নেই, তাই এটি অনুমান করবে না।",
   "error.api": "Copilot API-তে সংযোগ করা যাচ্ছে না। `copilot serve` দিয়ে চালু করুন।", "error.generic": "কিছু একটা ভুল হয়েছে।",
   "a11y.skip": "মূল বিষয়বস্তুতে যান", "lang.label": "ভাষা", "lang.partial": "এই ভাষায় কিছু পেজ এখনও ইংরেজিতে আছে।",
+  "places.openMaps": "Google Maps-এ খুলুন",
+  "places.seeAll": "Google Maps-এ সব দেখুন",
+  "places.open": "এখন খোলা",
+  "places.closed": "এখন বন্ধ",
+  "places.tapHint": "ক্যাম্পাসের কাছের জায়গা দেখতে একটি বিভাগে ট্যাপ করুন।",
+  "places.away": "{d} দূরে",
+  "places.website": "ওয়েবসাইট",
+  "f1nav.form8843": "ফর্ম 8843",
+  "f1nav.employers": "স্পনসর",
 };

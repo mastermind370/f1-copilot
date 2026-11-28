@@ -1,5 +1,5 @@
 # Fly.io: `fly launch --no-deploy`, then `fly secrets set COPILOT_ALLOWED_ORIGINS=https://your-app.vercel.app`,
-# then `fly deploy`.
+# optionally `fly secrets set GOOGLE_PLACES_API_KEY=...` for live listings, then `fly deploy`.
 app = "f1-copilot-api"
 primary_region = "ewr"
 
